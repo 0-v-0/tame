@@ -1,0 +1,12 @@
+name "tame"
+description "some utility library for D"
+authors "0-v-0"
+copyright "Copyright © 2022, 0-v-0"
+license "MIT"
+configuration "lib" {
+	targetType "library"
+	dflags "-preview=shortenedMethods"
+	dflags "--cache-retrieval=hardlink" platform="ldc"
+}
+sourcePaths "."
+importPaths "."
