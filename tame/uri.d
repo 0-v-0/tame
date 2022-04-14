@@ -24,7 +24,7 @@ void extractParams(S, M)(ref S url, ref M params) {
 }
 
 S makeQueryParams(M)(M params, char delimiter = '&') {
-	auto res = appender!(S);
+	auto res = appender!S;
 	foreach (key, value; params) {
 		res ~= key;
 		res ~= '=';

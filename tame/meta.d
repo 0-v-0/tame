@@ -8,7 +8,7 @@ template staticIota(int beg, int end) {
 		static if (beg >= end) {
 			alias staticIota = AliasSeq!();
 		} else {
-			alias staticIota = AliasSeq!(beg);
+			alias staticIota = AliasSeq!beg;
 		}
 	} else {
 		enum mid = beg + (end - beg) / 2;
@@ -23,6 +23,8 @@ template getUDA(alias sym, T) {
 	static if (is(typeof(getUDA) == void))
 		alias getUDA = T.init;
 }
+
+alias CutOut(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
 
 /**
  * Generates a mixin string for repeating code. It can be used to unroll variadic arguments.

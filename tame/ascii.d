@@ -17,10 +17,10 @@ nothrow @nogc:
 	Convert to lowercase in-place.
 +/
 
-char[] toLower(char[] src) pure @safe {
+T[] toLower(T)(T[] src) {
 	foreach (ref c; src)
 		if (c >= 'A' && c <= 'Z')
-			c = char(c | 32);
+			c = T(c | 32);
 	return src;
 }
 
@@ -28,10 +28,10 @@ char[] toLower(char[] src) pure @safe {
 	Convert to uppercase in-place.
 +/
 
-char[] toUpper(char[] src) pure @safe {
+T[] toUpper(T)(T[] src) {
 	foreach (ref c; src)
 		if (c >= 'a' && c <= 'z')
-			c = char(c & ~32);
+			c = T(c & ~32);
 	return src;
 }
 
@@ -39,7 +39,7 @@ char[] toUpper(char[] src) pure @safe {
 	Compare two char[] ignoring case. Returns 0 if equal
 +/
 
-int icompare(const(char[]) s1, const(char[]) s2) {
+int icompare(const(char[]) s1, const(char[]) s2) @trusted nothrow @nogc {
 	auto len = s1.length;
 	if (s2.length < len)
 		len = s2.length;
@@ -55,7 +55,7 @@ int icompare(const(char[]) s1, const(char[]) s2) {
 	Compare two char[] with case. Returns 0 if equal
 +/
 
-int compare(const(char[]) s1, const(char[]) s2) {
+auto compare(const(char[]) s1, const(char[]) s2) @trusted {
 	auto len = s1.length;
 	if (s2.length < len)
 		len = s2.length;
