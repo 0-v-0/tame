@@ -6,8 +6,7 @@ ulong convert(T)(const(T[]) digits, uint radix = 10, size_t* ate = null) {
 	size_t eaten;
 	ulong value;
 
-	foreach (ch; digits) {
-		T c = ch;
+	foreach (T c; digits) {
 		if (c < '0' || c > '9') {
 			if (c >= 'a' && c <= 'z')
 				c -= 39;
