@@ -1,5 +1,7 @@
-/.dub/
+.dub
 *.exe
 *.o
+*.a
 *.lib
+*.pdb
 /dub.selections.json

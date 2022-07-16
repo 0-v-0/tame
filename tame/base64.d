@@ -57,14 +57,14 @@ size_t encodeChunk(const(ubyte[]) data, char[] buff, ref size_t bytesEncoded) {
 	char* rtnPtr = buff.ptr;
 	const(ubyte)* dataPtr = data.ptr;
 
-	if (data.length > 0) {
+	if (data.length) {
 		rtn = tripletCount * 3;
 		bytesEncoded = tripletCount * 4;
 		for (size_t i; i < tripletCount; i++) {
-			*rtnPtr++ = _encodeTable[((dataPtr[0] & 0xFC) >> 2)];
-			*rtnPtr++ = _encodeTable[(((dataPtr[0] & 0x03) << 4) | ((dataPtr[1] & 0xF0) >> 4))];
-			*rtnPtr++ = _encodeTable[(((dataPtr[1] & 0x0F) << 2) | ((dataPtr[2] & 0xC0) >> 6))];
-			*rtnPtr++ = _encodeTable[(dataPtr[2] & 0x3F)];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4 | (dataPtr[1] & 0xF0) >> 4];
+			*rtnPtr++ = _encodeTable[(dataPtr[1] & 0x0F) << 2 | (dataPtr[2] & 0xC0) >> 6];
+			*rtnPtr++ = _encodeTable[dataPtr[2] & 0x3F];
 			dataPtr += 3;
 		}
 	}
@@ -92,7 +92,7 @@ in (buff.length >= encodedSize(data)) {
 	char[] rtn;
 
 	if (data.length) {
-		size_t bytesEncoded = 0;
+		size_t bytesEncoded;
 		size_t numBytes = encodeChunk(data, buff, bytesEncoded);
 		char* rtnPtr = buff.ptr + bytesEncoded;
 		const(ubyte)* dataPtr = data.ptr + numBytes;
@@ -100,14 +100,14 @@ in (buff.length >= encodedSize(data)) {
 
 		switch (tripletFraction) {
 		case 2:
-			*rtnPtr++ = _encodeTable[((dataPtr[0] & 0xFC) >> 2)];
-			*rtnPtr++ = _encodeTable[(((dataPtr[0] & 0x03) << 4) | ((dataPtr[1] & 0xF0) >> 4))];
-			*rtnPtr++ = _encodeTable[((dataPtr[1] & 0x0F) << 2)];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4 | (dataPtr[1] & 0xF0) >> 4];
+			*rtnPtr++ = _encodeTable[(dataPtr[1] & 0x0F) << 2];
 			*rtnPtr++ = '=';
 			break;
 		case 1:
-			*rtnPtr++ = _encodeTable[((dataPtr[0] & 0xFC) >> 2)];
-			*rtnPtr++ = _encodeTable[((dataPtr[0] & 0x03) << 4)];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
+			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4];
 			*rtnPtr++ = '=';
 			*rtnPtr++ = '=';
 			break;
