@@ -191,7 +191,7 @@ unittest {
 import core.thread : Fiber;
 import std.concurrency : Generator, yield;
 
-Promise!T async(T)(T delegate() dg)
+auto async(T)(T delegate() dg)
 if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 in (dg !is null) {
 	return Promise!T((res, rej) {

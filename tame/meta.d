@@ -3,6 +3,21 @@ module tame.meta;
 import std.traits;
 import std.meta : AliasSeq;
 
+struct Import(string Module) {
+	template opDispatch(string name) {
+		mixin("import opDispatch = " ~ Module ~ "." ~ name ~ ";");
+	}
+}
+
+template Forward(string member) {
+	ref auto opDispatch(string field, Args...)(Args args) {
+		static if (Args.length)
+			mixin("return ", member, ".", field, "(", args, ");");
+		else
+			mixin("return ", member, ".", field, ";");
+	}
+}
+
 template staticIota(int beg, int end) {
 	static if (beg + 1 >= end) {
 		static if (beg >= end) {
@@ -65,7 +80,7 @@ auto ParameterDefaultsCount(func...)() {
 	}
 
 	size_t n;
-	static foreach (f; func)
+	foreach (f; func)
 		n += PDC!(f, arity!f);
 	return n;
 }

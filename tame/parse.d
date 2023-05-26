@@ -4,7 +4,7 @@ import std.datetime;
 import std.conv : ConvException;
 import std.format : formattedRead;
 
-SysTime parseSysTime(S)(S input) @safe {
+SysTime parseSysTime(S)(const S input) {
 	import std.algorithm.searching;
 	import std.regex : match;
 
@@ -19,7 +19,7 @@ SysTime parseSysTime(S)(S input) @safe {
 		throw new DateTimeException("Can not convert '" ~ input ~ "' to SysTime");
 }
 
-unittest {
+@safe unittest {
 	// Accept valid (as per D language) systime formats
 	parseSysTime("2019-May-04 13:34:10.500Z");
 	parseSysTime("2019-Jan-02 13:34:10-03:00");
@@ -40,7 +40,7 @@ unittest {
 	//parseSysTime("2010-12-30 12:10:04.1+00"); // postgresql
 }
 
-DateTime parseDateTime(S)(S input) @safe {
+DateTime parseDateTime(S)(const S input) @safe {
 	import std.string;
 	import std.regex : match;
 
@@ -61,7 +61,7 @@ DateTime parseDateTime(S)(S input) @safe {
 		throw new DateTimeException("Can not convert '" ~ input ~ "' to DateTime");
 }
 
-unittest {
+@safe unittest {
 	// Accept valid (as per D language) datetime formats
 	parseDateTime("20101230T000000");
 	parseDateTime("2019-May-04 13:34:10");
@@ -74,7 +74,7 @@ unittest {
 	//parseDateTime("2019/05/07 13:32"); // todo: handle slash instead of hyphen
 }
 
-TimeOfDay parseTime(S)(S input) {
+auto parseTime(S)(auto ref S input) {
 	int hour, min, sec;
 	input.formattedRead("%s:%s:%s", &hour, &min, &sec);
 	return TimeOfDay(hour, min, sec);
@@ -119,7 +119,7 @@ uint hexDecode4(ref const(char)* hex) pure {
 	}
 }
 
-inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure {
+inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow {
 	foreach (i; 0 .. 4) {
 		result *= 16;
 		char ch = cast(char)(hex[i] - '0');
@@ -137,7 +137,7 @@ inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure {
 	return null;
 }
 
-unittest {
+nothrow unittest {
 	string x = "aF09";
 	const(char)* p = x.ptr;
 	uint result;

@@ -3,7 +3,7 @@ module tame.misc;
 import std.traits;
 
 /// Returns: true if an aray has an element
-bool hasElement(T)(T[] array, T element) {
+bool hasElement(T)(T[] array, in T element) {
 	bool r;
 	foreach (cur; array) {
 		if (cur == element) {
