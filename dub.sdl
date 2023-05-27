@@ -15,4 +15,5 @@ subPackage {
 	name "lockfree"
 	sourcePaths "lockfree"
 	importPaths "."
+	dflags "-preview=in"
 }

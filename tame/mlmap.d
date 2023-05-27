@@ -188,7 +188,7 @@ in (!node.empty) {
 	node.next = node.next.next;
 }
 
-mixin template DefVars() {
+version (unittest) mixin template DefVars() {
 	auto a = mlmap(), b = mlmap();
 	auto free = { a.free; b.free; };
 }

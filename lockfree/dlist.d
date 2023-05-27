@@ -50,7 +50,7 @@ shared class AtomicDList(T) {
 			newNode._next = next;
 		}
 		while (!cas(&prev._next, next, newNode));
-		linkPrev(cast(shared)newNode, next);
+		linkPrev(newNode, next);
 	}
 
 	void pushBack(shared T value) {
@@ -60,7 +60,7 @@ shared class AtomicDList(T) {
 		while (true) {
 			newNode._prev = prev;
 			newNode._next = next;
-			if (cas(&prev._next, next, cast(shared)newNode))
+			if (cas(&prev._next, next, newNode))
 				break;
 			if (correctPrev(prev, next))
 				prev = clearlsb(next._prev);
@@ -464,13 +464,13 @@ version (unittest):
 // dfmt on
 
 unittest {
-	auto testList = new shared(TList)();
-	testList.pushFront(cast(shared)TPayload(0));
+	auto testList = new shared TList();
+	testList.pushFront(shared TPayload(0));
 	auto cursor = &testList._head;
 	testList.next(cursor);
 	cursor._next = setlsb(cursor._next);
 	cursor._prev = setlsb(cursor._prev);
-	testList.insertBefore(cursor, cast(shared)TPayload(1));
+	testList.insertBefore(cursor, shared TPayload(1));
 }
 
 unittest {
@@ -478,17 +478,17 @@ unittest {
 	assert(testList._head._next == &testList._tail);
 	assert(testList._tail._prev == &testList._head);
 
-	testList.pushFront(cast(shared)TPayload(0));
+	testList.pushFront(shared TPayload(0));
 	assert(testList._head._next != &testList._tail);
 	assert(testList._tail._prev != &testList._head);
 	assert(testList._head._next._next == &testList._tail);
 	assert(testList._tail._prev._prev == &testList._head);
-	assert(testList._head._next._payload == cast(shared)TPayload(0));
+	assert(testList._head._next._payload == shared TPayload(0));
 
 	auto pValue = testList.popFront();
 	assert(testList._head._next == &testList._tail);
 	assert(testList._tail._prev == &testList._head);
-	assert(*pValue == cast(shared)TPayload(0));
+	assert(*pValue == shared TPayload(0));
 }
 
 struct Heavy {
@@ -500,10 +500,6 @@ struct Heavy {
 }
 
 struct Light {
-	this(size_t val) {
-		val = val;
-	}
-
 	size_t val;
 }
 
@@ -521,9 +517,9 @@ void adder(Position Where)() {
 	size_t count = amount;
 	do {
 		static if (Where == Position.Front)
-			sList.pushFront(cast(shared)TPayload(count));
+			sList.pushFront(shared TPayload(count));
 		else
-			sList.pushBack(cast(shared)TPayload(count));
+			sList.pushBack(shared TPayload(count));
 	}
 	while (--count);
 }
@@ -546,18 +542,16 @@ void iterAdder(Position Where)() {
 	static if (Where == Position.Front) {
 		do {
 			auto cursor = &sList._head;
-			do {
-				sList.insertAfter(cursor, cast(shared)TPayload(count));
-			}
+			do
+				sList.insertAfter(cursor, shared TPayload(count));
 			while (--count && sList.next(cursor));
 		}
 		while (count);
 	} else {
 		do {
 			auto cursor = &sList._tail;
-			do {
-				sList.insertBefore(cursor, cast(shared)TPayload(count));
-			}
+			do
+				sList.insertBefore(cursor, shared TPayload(count));
 			while (--count && sList.prev(cursor));
 		}
 		while (count);
@@ -569,18 +563,16 @@ void iterRemover(Position Where)() {
 	static if (Where == Position.Front) {
 		do {
 			auto cursor = &sList._head;
-			do {
+			do
 				sList.next(cursor);
-			}
 			while (sList.deleteNode(cursor) !is null && --count);
 		}
 		while (count);
 	} else {
 		do {
 			auto cursor = &sList._tail;
-			do {
+			do
 				sList.prev(cursor);
-			}
 			while (sList.deleteNode(cursor) !is null && --count);
 		}
 		while (count);
@@ -595,15 +587,13 @@ void iterator(Position Where)() {
 
 		static if (Where == Position.Front) {
 			auto cursor = &sList._head;
-			while (sList.next(cursor)) {
+			while (sList.next(cursor))
 				++steps;
-			}
 			assert(cursor == &sList._tail);
 		} else {
 			auto cursor = &sList._tail;
-			while (sList.prev(cursor)) {
+			while (sList.prev(cursor))
 				++steps;
-			}
 			assert(cursor == &sList._head);
 		}
 

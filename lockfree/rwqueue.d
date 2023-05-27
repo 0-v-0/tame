@@ -6,7 +6,7 @@ import core.atomic;
  * A Lock-Free Single-Reader, Single-Writer (SRSW) FIFO queue.
  */
 shared struct RWQueue(T, size_t capacity = roundPow2!(PAGE_SIZE / T.sizeof))
-if (T.sizeof <= size_t.sizeof) // TODO: Hangs for struct T { double x, y }, is this a bug or a fundamental limitation?
+if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
 {
 	static assert(capacity, "Cannot have a capacity of 0.");
 	static assert(roundPow2!capacity == capacity, "The capacity must be a power of 2");
@@ -23,7 +23,7 @@ if (T.sizeof <= size_t.sizeof) // TODO: Hangs for struct T { double x, y }, is t
 		return length == capacity;
 	}
 
-	void push(shared T t)
+	void push(shared in T t)
 	in (!full) {
 		immutable pos = atomicLoad!(MemoryOrder.acq)(_wpos);
 		_data[pos & mask] = t;
@@ -58,9 +58,11 @@ template roundPow2(size_t v) {
 	enum roundPow2 = v ? cast(size_t)1 << bsr(v) : 0;
 }
 
-static assert(roundPow2!0 == 0);
-static assert(roundPow2!3 == 2);
-static assert(roundPow2!4 == 4);
+unittest {
+	static assert(roundPow2!0 == 0);
+	static assert(roundPow2!3 == 2);
+	static assert(roundPow2!4 == 4);
+}
 
 version (unittest) {
 	import core.thread, std.concurrency;
@@ -71,7 +73,7 @@ version (unittest) {
 		foreach (i; 0 .. amount) {
 			while (queue.full)
 				Thread.yield();
-			queue.push(cast(shared T)i);
+			queue.push(shared T(i));
 		}
 	}
 
@@ -79,7 +81,7 @@ version (unittest) {
 		foreach (i; 0 .. amount) {
 			while (queue.empty)
 				Thread.yield();
-			assert(queue.pop() == cast(shared T)i);
+			assert(queue.pop() == shared T(i));
 		}
 	}
 }
@@ -88,7 +90,6 @@ unittest {
 	import std.stdio, std.datetime.stopwatch;
 
 	StopWatch sw;
-	sw.reset;
 	sw.start;
 
 	shared(RWQueue!double) queue;

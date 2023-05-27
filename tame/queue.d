@@ -207,9 +207,8 @@ pure @nogc:
 	}
 
 	auto arr = [1, -1, 2, -2, 3, -3, 4, -4, 5, -5];
-	foreach (i; arr) {
+	foreach (i; arr)
 		queue.push(i);
-	}
 
 	arr = 42 ~ arr[0 .. 3] ~ 42 ~ arr[3 .. $] ~ 42;
 	queue.insert(42, 3);

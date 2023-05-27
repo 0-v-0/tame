@@ -117,7 +117,6 @@ unittest {
 	}
 
 	StopWatch sw;
-	sw.reset;
 	sw.start;
 
 	auto queue = shared LockFreeQueue!size_t(0);

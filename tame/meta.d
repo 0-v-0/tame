@@ -10,24 +10,26 @@ struct Import(string Module) {
 }
 
 template Forward(string member) {
-	ref auto opDispatch(string field, Args...)(Args args) {
+	ref auto opDispatch(string field, Args...)(auto ref Args args) {
+		import std.functional : forward;
+
 		static if (Args.length)
-			mixin("return ", member, ".", field, "(", args, ");");
+			mixin("return ", member, ".", field, "(forward!args);");
 		else
 			mixin("return ", member, ".", field, ";");
 	}
 }
 
-template staticIota(int beg, int end) {
-	static if (beg + 1 >= end) {
-		static if (beg >= end) {
+template staticIota(int begin, int end) {
+	static if (begin + 1 >= end) {
+		static if (begin >= end) {
 			alias staticIota = AliasSeq!();
 		} else {
-			alias staticIota = AliasSeq!beg;
+			alias staticIota = AliasSeq!begin;
 		}
 	} else {
-		enum mid = beg + (end - beg) / 2;
-		alias staticIota = AliasSeq!(staticIota!(beg, mid), staticIota!(mid, end));
+		enum mid = begin + (end - begin) / 2;
+		alias staticIota = AliasSeq!(staticIota!(begin, mid), staticIota!(mid, end));
 	}
 }
 
@@ -125,13 +127,13 @@ Examples:
 int a;
 string b;
 tie(a, b) = tuple(3, "hi");
-assert(a == 3 && b == hi);
+assert(a == 3 && b == "hi");
 ---
 +/
 auto tie(T...)(out T args) {
 	struct Impl {
-		void opAssign(U)(U tuple) if (U.length == T.length) {
-			static foreach (i; 0 .. U.length)
+		void opAssign(U)(U tuple) if (U.length >= T.length) {
+			static foreach (i; 0 .. T.length)
 				args[i] = tuple[i];
 		}
 	}

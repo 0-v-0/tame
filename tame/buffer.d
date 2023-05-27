@@ -2,11 +2,9 @@ module tame.buffer;
 
 enum maxAlloca = 2048;
 
-/*
- *
+/**
  * Fixed maximum number of items on the stack. Memory is a static stack buffer.
  * This buffer can be filled up and cleared for reuse.
- *
  */
 
 struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
