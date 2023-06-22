@@ -8,8 +8,6 @@ importPaths "."
 dflags "-dip1008"
 configuration "lib" {
 	targetType "library"
-	dflags "-preview=shortenedMethods"
-	dflags "--cache-retrieval=hardlink" platform="ldc"
 }
 subPackage {
 	name "lockfree"
