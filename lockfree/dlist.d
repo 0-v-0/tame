@@ -16,13 +16,9 @@ shared class AtomicDList(T) {
 			_payload = payload;
 		}
 
-		@property shared(Node)* prev() {
-			return clearlsb(_prev);
-		}
+		@property shared(Node)* prev() => clearlsb(_prev);
 
-		@property shared(Node)* next() {
-			return clearlsb(_next);
-		}
+		@property shared(Node)* next() => clearlsb(_next);
 	}
 
 	private Node _head, _tail;
@@ -36,9 +32,7 @@ shared class AtomicDList(T) {
 		_tail._next = bottom;
 	}
 
-	bool empty() {
-		return _head._next == &_tail;
-	}
+	bool empty() => _head._next == &_tail;
 
 	void pushFront(shared T value) {
 		auto newNode = new shared(Node)(value);
@@ -308,13 +302,9 @@ synchronized class SyncedDList(T) {
 			_payload = payload;
 		}
 
-		@property shared(Node)* next() shared {
-			return _next;
-		}
+		@property shared(Node)* next() shared => _next;
 
-		@property shared(Node)* prev() shared {
-			return _prev;
-		}
+		@property shared(Node)* prev() shared => _prev;
 	}
 
 	private Node _head, _tail;
@@ -348,9 +338,7 @@ synchronized class SyncedDList(T) {
 		_tail.sentinel = 0xdeadbeef;
 	}
 
-	bool empty() {
-		return _head._next == &_tail;
-	}
+	bool empty() => _head._next == &_tail;
 
 	void pushFront(shared T value) {
 		auto newNode = new shared(Node)(value);
@@ -443,17 +431,11 @@ synchronized class SyncedDList(T) {
 
 private:
 
-bool haslsb(T)(T* p) {
-	return (cast(size_t)p & 1) != 0;
-}
+bool haslsb(T)(T* p) => (cast(size_t)p & 1) != 0;
 
-T* setlsb(T)(T* p) {
-	return cast(T*)(cast(size_t)p | 1);
-}
+T* setlsb(T)(T* p) => cast(T*)(cast(size_t)p | 1);
 
-T* clearlsb(T)(T* p) {
-	return cast(T*)(cast(size_t)p & ~1);
-}
+T* clearlsb(T)(T* p) => cast(T*)(cast(size_t)p & ~1);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Unit Tests

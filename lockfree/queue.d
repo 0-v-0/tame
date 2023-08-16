@@ -81,9 +81,7 @@ shared struct LockFreeQueue(T) {
 	}
 
 	/+
-	@property size_t count() {
-		return _count;
-	}
+	@property size_t count() => _count;
 	+/
 private:
 	shared struct Node {

@@ -108,13 +108,9 @@ public:
 			}
 
 			ref T front()
-			in (cursor) {
-				return cursor.value;
-			}
+			in (cursor) => cursor.value;
 
-			bool empty() {
-				return cursor is null;
-			}
+			bool empty() => cursor is null;
 		}
 
 		return Result(first_);
@@ -181,19 +177,13 @@ pure @nogc:
 	/// Returns: The next element in the queue.
 	ref inout(T) peek() inout
 	in (!empty, "Trying to peek at an element in an empty queue")
-	do {
-		return first_.value;
-	}
+		=> first_.value;
 
 	/// Returns: true of the queue empty, false otherwise.
-	bool empty() const {
-		return first_ is null;
-	}
+	bool empty() const => first_ is null;
 
 	/// Returns: The number of elements in the queue.
-	size_t length() const {
-		return len;
-	}
+	size_t length() const => len;
 }
 
 @safe nothrow unittest {

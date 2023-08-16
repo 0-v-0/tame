@@ -103,9 +103,7 @@ import tame.internal;
  *
  */
 
-uint hexDecode(char c) @safe pure {
-	return c + 9 * (c >> 6) & 15;
-}
+uint hexDecode(char c) @safe pure => c + 9 * (c >> 6) & 15;
 
 uint hexDecode4(ref const(char)* hex) pure {
 	uint x = *cast(uint*)&hex;
@@ -179,7 +177,7 @@ in (special.length == 0 || callback) {
 
 	static immutable byte[256] classify =
 		iota(256).map!(c => terminators.canFind(c) ? byte(-1) : special.canFind(c) ? 1 : 0)
-		.staticArray;
+			.staticArray;
 
 	immutable(C)* p_key = key.ptr;
 	immutable C* e_key = p_key + key.length;
@@ -187,9 +185,9 @@ in (special.length == 0 || callback) {
 	while (p_key !is e_key) {
 		int clazz = *p_str <= 0xFF ? classify[*p_str] : 0;
 
-		if (clazz < 0) {
+		if (clazz < 0)
 			return clazz;
-		} else if (clazz == 0) {
+		if (clazz == 0) {
 			if (*p_str != *p_key)
 				return clazz;
 

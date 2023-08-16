@@ -115,10 +115,8 @@ version (DigitalMars) {
  * Aligns a pointer to the closest multiple of $(D pot) (a power of two),
  * which is equal to or larger than $(D value).
  */
-T* alignPtrNext(T)(scope T* ptr, in size_t pot)
-in (pot > 0 && pot.isPowerOf2) {
-	return cast(T*)((cast(size_t)ptr + (pot - 1)) & -pot);
-}
+T* alignPtrNext(T)(scope T* ptr, size_t pot)
+in (pot > 0 && pot.isPowerOf2) => cast(T*)((cast(size_t)ptr + (pot - 1)) & -pot);
 
 unittest {
 	assert(alignPtrNext(cast(void*)65, 64) == cast(void*)128);
@@ -126,10 +124,8 @@ unittest {
 
 @safe {
 	/// Returns whether the (positive) argument is an integral power of two.
-	@property bool isPowerOf2(in size_t n)
-	in (n > 0) {
-		return (n & n - 1) == 0;
-	}
+	@property bool isPowerOf2(size_t n)
+	in (n > 0) => (n & n - 1) == 0;
 
 	version (LDC) {
 		import core.simd;

@@ -11,17 +11,12 @@ if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a f
 	static assert(capacity, "Cannot have a capacity of 0.");
 	static assert(roundPow2!capacity == capacity, "The capacity must be a power of 2");
 
-	@property size_t length() shared const {
-		return atomicLoad!(MemoryOrder.acq)(_wpos) - atomicLoad!(MemoryOrder.acq)(_rpos);
-	}
+	@property size_t length() shared const => atomicLoad!(MemoryOrder.acq)(_wpos) - atomicLoad!(
+		MemoryOrder.acq)(_rpos);
 
-	@property bool empty() shared const {
-		return !length;
-	}
+	@property bool empty() shared const => !length;
 
-	@property bool full() const {
-		return length == capacity;
-	}
+	@property bool full() const => length == capacity;
 
 	void push(shared in T t)
 	in (!full) {

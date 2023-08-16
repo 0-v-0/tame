@@ -23,9 +23,7 @@ pure nothrow @nogc:
 	data = An array that will be encoded
 */
 
-size_t encodedSize(in void[] data) {
-	return encodedSize(data.length);
-}
+size_t encodedSize(in void[] data) => encodedSize(data.length);
 
 /*
 	calculates and returns the size needed to encode the length passed.

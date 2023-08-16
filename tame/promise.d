@@ -3,8 +3,8 @@ module tame.promise;
 import std.traits;
 
 alias
-	ResolveFunc(T) = void delegate(Arg!T) nothrow,
-	RejectFunc = void delegate(Exception) nothrow;
+ResolveFunc(T) = void delegate(Arg!T) nothrow,
+RejectFunc = void delegate(Exception) nothrow;
 
 private template Flatten(S) {
 	static if (is(Unqual!S : Promise!U, U))
@@ -34,17 +34,11 @@ struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 	Exception exception;
 
 	@property @safe @nogc nothrow {
-		bool isPending() const {
-			return !hasValue;
-		}
+		bool isPending() const => !hasValue;
 
-		bool isFulfilled() const {
-			return !isPending && exception is null;
-		}
+		bool isFulfilled() const => !isPending && exception is null;
 
-		bool isRejected() const {
-			return !isPending && exception !is null;
-		}
+		bool isRejected() const => !isPending && exception !is null;
 	}
 
 	this(void delegate(ResolveFunc!T resolve) nothrow executer) nothrow
@@ -80,17 +74,17 @@ struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 			S delegate(T) onFulfilled,
 			U delegate(Exception) onRejected = cast(S delegate(Exception))thrower
 		) if (is(Flatten!S == Flatten!U))
-		in (onFulfilled !is null)
-		in (onRejected !is null) {
-			return then(() => onFulfilled(value), onRejected);
-		}
+	in (onFulfilled)
+	in (onRejected) {
+		return then(() => onFulfilled(value), onRejected);
+	}
 
 	Promise!(Flatten!S) then(S, U)(
 		S delegate() onFulfilled,
 		U delegate(Exception) onRejected = cast(S delegate(Exception))thrower
 	) if (is(Flatten!S == Flatten!U))
-	in (onFulfilled !is null)
-	in (onRejected !is null) {
+	in (onFulfilled)
+	in (onRejected) {
 		typeof(return) child;
 		child.next = noop;
 		next = () {
@@ -184,7 +178,7 @@ unittest {
 
 	//Error handling
 	Promise!string((resolve, reject) { throw new Exception("test"); })
-		.fail((e) { return e.msg; })
+		.fail((e) => e.msg)
 		.then((a) { a.writeln; });
 }
 

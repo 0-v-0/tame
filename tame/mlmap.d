@@ -15,9 +15,7 @@ struct Node(K = string, V = string) {
 		return len;
 	}
 
-	@property bool empty() const nothrow @nogc @safe {
-		return length == 0;
-	}
+	@property bool empty() const nothrow @nogc @safe => length == 0;
 
 	void rehash() nothrow {
 		aa.rehash();
@@ -35,13 +33,9 @@ struct Node(K = string, V = string) {
 
 	static if (isSomeString!K)
 		@property {
-			auto opDispatch(K key)() {
-				return get(key);
-			}
+			auto opDispatch(K key)() => get(key);
 
-			auto opDispatch(K key)(scope const V value) {
-				return aa[key] = value;
-			}
+			auto opDispatch(K key)(scope const V value) => aa[key] = value;
 		}
 
 	V* opBinaryRight(string op : "in")(scope const K key) {
@@ -167,21 +161,13 @@ struct MLMap(K = string, V = string) {
 	}
 }
 
-auto mlmap(K = string, V = string)() {
-	return MLMap!(K, V)(new Node!(K, V));
-}
+auto mlmap(K = string, V = string)() => MLMap!(K, V)(new Node!(K, V));
 
-auto mlmap(K, V)(Node!(K, V)* node) {
-	return MLMap!(K, V)(node);
-}
+auto mlmap(K, V)(Node!(K, V)* node) => MLMap!(K, V)(node);
 
-auto mlmap(K, V)(V[K] aa) {
-	return mlmap(new Node!(K, V)(aa));
-}
+auto mlmap(K, V)(V[K] aa) => mlmap(new Node!(K, V)(aa));
 
-auto mlmap(K, V)(V[K] aa, Node!(K, V)* next) {
-	return mlmap(new Node!(K, V)(aa, next));
-}
+auto mlmap(K, V)(V[K] aa, Node!(K, V)* next) => mlmap(new Node!(K, V)(aa, next));
 
 void removeNext(K, V)(MLMap!(K, V) node)
 in (!node.empty) {

@@ -22,13 +22,9 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 			this = rhs;
 		}
 
-		@property bool empty() const {
-			return pos == 0;
-		}
+		@property bool empty() const => pos == 0;
 
-		@property T[] data() {
-			return buf[0 .. pos];
-		}
+		@property T[] data() => buf[0 .. pos];
 
 		void clear() {
 			pos = 0;
@@ -40,13 +36,9 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 		outputFunc = cast(OutputFunc)oFunc;
 	}
 
-	T opCast(T : bool)() const {
-		return !empty();
-	}
+	T opCast(T : bool)() const => !empty();
 
-	T opCast(T)() const if (!is(T : bool)) {
-		return cast(T)buf[0 .. pos];
-	}
+	T opCast(T)() const if (!is(T : bool)) => cast(T)buf[0 .. pos];
 
 	/// assignment
 	auto opAssign(in T[] rhs)
@@ -116,15 +108,14 @@ struct TempBuffer(T) {
 	}
 
 pure nothrow @safe:
-	//dfmt off
-	T[] opSlice() { return slice[]; }
-	T[] opSlice(size_t a, size_t b) { return slice[a .. b]; }
-	T[] opSliceAssign(const(T)[] value, size_t a, size_t b) { return slice[a .. b] = value; }
-	ref T opIndex(size_t idx) { return slice[idx]; }
-	@property size_t size() { return T.sizeof * slice.length; }
-	@property size_t length() { return slice.length; }
+	T[] opSlice() => slice[];
+	T[] opSlice(size_t a, size_t b) => slice[a .. b];
+	T[] opSliceAssign(const(T)[] value, size_t a, size_t b) => slice[a .. b] = value;
+	ref T opIndex(size_t idx) => slice[idx];
+	@property size_t size() => T.sizeof * slice.length;
+	@property size_t length() => slice.length;
 	alias opDollar = length;
-	@property T* ptr() @trusted { return slice.ptr; } // must use .ptr here for zero length strings
+	@property T* ptr() @trusted => slice.ptr; // must use .ptr here for zero length strings
 
 	alias ptr this;
 
@@ -133,14 +124,15 @@ pure nothrow @safe:
 			T* ptr;
 			size_t idx;
 
-			void put(T)(auto ref T t) { ptr[idx++] = t; }
+			void put(T)(auto ref T t) {
+				ptr[idx++] = t;
+			}
 
-			T[] opSlice() { return ptr[0 .. idx]; }
+			T[] opSlice() => ptr[0 .. idx];
 		}
 
 		return OutputRange(slice.ptr, 0);
 	}
-	//dfmt on
 }
 
 TempBuffer!T tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
@@ -190,9 +182,7 @@ auto asOutputRange(T)(T* t) {
 			*ptr++ = t;
 		}
 
-		T[] opSlice() pure {
-			return start[0 .. ptr - start];
-		}
+		T[] opSlice() pure => start[0 .. ptr - start];
 	}
 
 	static assert(isOutputRange!(PointerRange, T));
@@ -226,7 +216,6 @@ public:
 
 struct StackBufferEntry(T) {
 private:
-
 	StackBufferEntry!void* prev;
 
 	this(T* ptr) {
@@ -240,7 +229,6 @@ private:
 	}
 
 public:
-
 	T* ptr;
 
 	static if (!is(T == void)) {
@@ -258,16 +246,10 @@ public:
 		}
 
 	pure nothrow @nogc:
-		ref inout(T) opIndex(size_t idx) @system inout {
-			return ptr[idx];
-		}
+		ref inout(T) opIndex(size_t idx) @system inout => ptr[idx];
 
-		inout(T)[] opSlice(size_t a, size_t b) @system inout {
-			return ptr[a .. b];
-		}
+		inout(T)[] opSlice(size_t a, size_t b) @system inout => ptr[a .. b];
 
-		@property auto range() @safe {
-			return ptr.asOutputRange();
-		}
+		@property auto range() @safe => ptr.asOutputRange();
 	}
 }
