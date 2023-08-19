@@ -4,14 +4,11 @@ import std.traits;
 
 /// Returns: true if an aray has an element
 bool hasElement(T)(T[] array, in T element) {
-	bool r;
 	foreach (cur; array) {
-		if (cur == element) {
-			r = true;
-			break;
-		}
+		if (cur == element)
+			return true;
 	}
-	return r;
+	return false;
 }
 ///
 unittest {

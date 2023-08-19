@@ -31,5 +31,5 @@ S makeQueryParams(M)(M params, char delimiter = '&') {
 		res ~= value;
 		res ~= delimiter;
 	}
-	return dbName.length ? res[][0 .. $ - 1] : res[];
+	return res[];
 }

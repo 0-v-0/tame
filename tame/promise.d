@@ -42,7 +42,7 @@ struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 	}
 
 	this(void delegate(ResolveFunc!T resolve) nothrow executer) nothrow
-	in (executer !is null) {
+	in (executer) {
 		next = noop;
 		executer((Arg!T) {
 			if (isPending) {
@@ -55,7 +55,7 @@ struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 	}
 
 	this(void delegate(ResolveFunc!T resolve, RejectFunc reject) executer) nothrow
-	in (executer !is null) {
+	in (executer) {
 		this((res) nothrow{
 			void rej(Exception ex) {
 				exception = ex;
@@ -154,7 +154,7 @@ static @safe @nogc pure nothrow:
 	}
 
 	Promise!T reject(Exception ex)
-	in (ex !is null) {
+	in (ex) {
 		Promise!T p;
 		p.exception = ex;
 		p.hasValue = true;
@@ -187,7 +187,7 @@ import std.concurrency : Generator, yield;
 
 auto async(T)(T delegate() dg)
 if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
-in (dg !is null) {
+in (dg) {
 	return Promise!T((res, rej) {
 		static if (is(T == void)) {
 			alias value = Arg!T;

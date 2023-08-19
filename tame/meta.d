@@ -59,7 +59,7 @@ alias CutOut(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
  * See_Also:
  *   $(LINK2 http://forum.dlang.org/thread/vqfvihyezbmwcjkmpzin@forum.dlang.org, A simple way to do compile time loop unrolling)
  */
-enum ctfeJoin(size_t length)(in string fmt, in string joiner = null) {
+auto ctfeJoin(size_t length)(in string fmt, in string joiner = null) {
 	import std.range : iota;
 	import std.algorithm : map;
 
