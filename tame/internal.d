@@ -63,15 +63,15 @@ pure nothrow @nogc:
 version (DigitalMars) {
 	import core.bitop : bsr, bsf;
 
+	pragma(inline, true)
 	U clz(U)(U u) if (is(Unqual!U : size_t)) {
-		pragma(inline, true);
 		enum U max = 8 * U.sizeof - 1;
 		return max - bsr(u);
 	}
 
 	static if (isX86) {
+		pragma(inline, true)
 		uint clz(U)(U u) if (is(Unqual!U == ulong)) {
-			pragma(inline, true);
 			uint hi = u >> 32;
 			return hi ? 31 - bsr(hi) : 63 - bsr(cast(uint)u);
 		}
@@ -88,16 +88,16 @@ version (DigitalMars) {
 	} else
 		alias clz = __builtin_clzl;
 } else version (LDC) {
+	pragma(inline, true)
 	U clz(U)(U u) if (is(Unqual!U : size_t)) {
-		pragma(inline, true);
 		import ldc.intrinsics;
 
 		return llvm_ctlz(u, false);
 	}
 
 	static if (size_t.sizeof == 4) {
+		pragma(inline, true)
 		uint clz(U)(U u) if (is(Unqual!U == ulong)) {
-			pragma(inline, true);
 			import ldc.intrinsics;
 
 			return cast(uint)llvm_ctlz(u, false);

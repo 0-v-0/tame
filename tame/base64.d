@@ -23,7 +23,7 @@ pure nothrow @nogc:
 	data = An array that will be encoded
 */
 
-size_t encodedSize(in void[] data) => encodedSize(data.length);
+size_t encodedSize(in void[] data) @safe => encodedSize(data.length);
 
 /*
 	calculates and returns the size needed to encode the length passed.
@@ -32,9 +32,8 @@ size_t encodedSize(in void[] data) => encodedSize(data.length);
 	length = Number of bytes to be encoded
 */
 
-size_t encodedSize(size_t length) {
-	return (length + 2) / 3 * 4; // for every 3 bytes we need 4 bytes to encode, with any fraction needing an additional 4 bytes with padding
-}
+size_t encodedSize(size_t length) @safe
+	=> (length + 2) / 3 * 4; // for every 3 bytes we need 4 bytes to encode, with any fraction needing an additional 4 bytes with padding
 
 /*
 	encodes data into buff and returns the number of bytes encoded.
@@ -110,7 +109,6 @@ in (buff.length >= encodedSize(data)) {
 			*rtnPtr++ = '=';
 			break;
 		default:
-			break;
 		}
 		rtn = buff[0 .. (rtnPtr - buff.ptr)];
 	}
@@ -213,12 +211,12 @@ in (data) {
 	return rtn;
 }
 
-// dfmt off
-
 private:
 
 enum BASE64_PAD = 64;
 immutable _encodeTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+// dfmt off
 
 immutable ubyte[] _decodeTable = [
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

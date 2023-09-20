@@ -238,5 +238,5 @@ unittest {
 	new Thread(func).start();
 	async(noop);
 
-	"0 ms".writeln;
+	writeln("0 ms");
 }

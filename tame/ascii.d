@@ -39,7 +39,7 @@ T[] toUpper(T)(T[] src) {
 	Compare two char[] ignoring case. Returns 0 if equal
 +/
 
-int icompare(const(char[]) s1, const(char[]) s2) @trusted nothrow @nogc {
+int icompare(in char[] s1, in char[] s2) @trusted nothrow @nogc {
 	auto len = s1.length;
 	if (s2.length < len)
 		len = s2.length;
@@ -55,7 +55,7 @@ int icompare(const(char[]) s1, const(char[]) s2) @trusted nothrow @nogc {
 	Compare two char[] with case. Returns 0 if equal
 +/
 
-auto compare(const(char[]) s1, const(char[]) s2) @trusted {
+auto compare(in char[] s1, in char[] s2) @trusted {
 	auto len = s1.length;
 	if (s2.length < len)
 		len = s2.length;
@@ -160,11 +160,11 @@ CharClass classify(char ch) pure {
 	import std.ascii;
 
 	with (CharClass) {
-		if (isLower(ch))
+		if (ch.isLower)
 			return LowerCase;
-		if (isUpper(ch))
+		if (ch.isUpper)
 			return UpperCase;
-		if (isDigit(ch))
+		if (ch.isDigit)
 			return Digit;
 		if (ch == '_')
 			return Underscore;

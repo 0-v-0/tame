@@ -21,16 +21,15 @@ template Forward(string member) {
 }
 
 template staticIota(int begin, int end) {
-	static if (begin + 1 >= end) {
-		static if (begin >= end) {
-			alias staticIota = AliasSeq!();
-		} else {
-			alias staticIota = AliasSeq!begin;
-		}
-	} else {
-		enum mid = begin + (end - begin) / 2;
-		alias staticIota = AliasSeq!(staticIota!(begin, mid), staticIota!(mid, end));
-	}
+	alias staticIota = AliasSeq!();
+	static foreach (i; begin .. end)
+		staticIota = AliasSeq!(staticIota, i);
+}
+
+///
+unittest {
+	static assert(staticIota!(0, 0) == AliasSeq!());
+	static assert(staticIota!(0, 5) == AliasSeq!(0, 1, 2, 3, 4));
 }
 
 template getUDA(alias sym, T) {
@@ -74,7 +73,7 @@ auto ctfeJoin(size_t length)(in string fmt, in string joiner = null) {
 }
 
 auto ParameterDefaultsCount(func...)() {
-	template PDC(alias func, int cnt) {
+	template PDC(alias func, size_t cnt) {
 		static if (__traits(compiles, func(Parameters!func[0 .. cnt])))
 			enum PDC = PDC!(func, cnt - 1);
 		else
@@ -109,11 +108,11 @@ private struct Impl {
 	Params:
 		first = value to be ignored.
 	+/
-	pragma(inline, true);
+	pragma(inline, true)
 	void opAssign(T)(in T) inout {
 	}
 }
-
+///
 unittest {
 	_ = 2;
 	_ = _;
@@ -122,13 +121,6 @@ unittest {
 /++
 A copy of std::tie from C++.
 TODO: write proper documentation for this
-Examples:
----
-int a;
-string b;
-tie(a, b) = tuple(3, "hi");
-assert(a == 3 && b == "hi");
----
 +/
 auto tie(T...)(out T args) {
 	struct Impl {
@@ -139,4 +131,13 @@ auto tie(T...)(out T args) {
 	}
 
 	return Impl();
+}
+///
+unittest {
+	import std.typecons;
+
+	int a;
+	string b;
+	tie(a, b) = tuple(3, "hi");
+	assert(a == 3 && b == "hi");
 }

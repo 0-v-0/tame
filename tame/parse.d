@@ -4,7 +4,7 @@ import std.datetime;
 import std.conv : ConvException;
 import std.format : formattedRead;
 
-SysTime parseSysTime(S)(const S input) {
+SysTime parseSysTime(S)(in S input) {
 	import std.algorithm.searching;
 	import std.regex : match;
 
@@ -40,22 +40,18 @@ SysTime parseSysTime(S)(const S input) {
 	//parseSysTime("2010-12-30 12:10:04.1+00"); // postgresql
 }
 
-DateTime parseDateTime(S)(const S input) @safe {
+DateTime parseDateTime(S)(in S input) @safe {
 	import std.string;
 	import std.regex : match;
 
 	try {
 
-		if (match(input, r"\d{8}T\d{6}")) {
-			// ISO String: 'YYYYMMDDTHHMMSS'
+		if (input.match(`\d{8}T\d{6}`)) // ISO String: 'YYYYMMDDTHHMMSS'
 			return DateTime.fromISOString(input);
-		} else if (match(input, r"\d{4}-\D{3}-\d{2}.*")) {
-			// Simple String 'YYYY-Mon-DD HH:MM:SS'
+		if (input.match(`\d{4}-\D{3}-\d{2}`)) // Simple String 'YYYY-Mon-DD HH:MM:SS'
 			return DateTime.fromSimpleString(input);
-		} else if (match(input, r"\d{4}-\d{2}-\d{2}.*")) {
-			// ISO ext string 'YYYY-MM-DDTHH:MM:SS'
+		if (input.match(`\d{4}-\d{2}-\d{2}`)) // ISO ext string 'YYYY-MM-DDTHH:MM:SS'
 			return DateTime.fromISOExtString(input.replace(' ', 'T'));
-		}
 		throw new ConvException(null);
 	} catch (ConvException e)
 		throw new DateTimeException("Can not convert '" ~ input ~ "' to DateTime");
@@ -70,8 +66,6 @@ DateTime parseDateTime(S)(const S input) @safe {
 
 	// Accept non-standard (as per D language) timestamp formats
 	parseDateTime("2019-06-14 13:34:10"); // accept a non-standard variation (space instead of T)
-	//parseDateTime("2019-05-07 13:32"); // todo: handle missing seconds
-	//parseDateTime("2019/05/07 13:32"); // todo: handle slash instead of hyphen
 }
 
 auto parseTime(S)(auto ref S input) {
@@ -117,7 +111,7 @@ uint hexDecode4(ref const(char)* hex) pure {
 	}
 }
 
-inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow {
+inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @trusted {
 	foreach (i; 0 .. 4) {
 		result *= 16;
 		char ch = cast(char)(hex[i] - '0');

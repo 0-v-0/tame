@@ -1,23 +1,10 @@
 module tame.misc;
 
+import std.ascii;
 import std.traits;
 
-/// Returns: true if an aray has an element
-bool hasElement(T)(T[] array, in T element) {
-	foreach (cur; array) {
-		if (cur == element)
-			return true;
-	}
-	return false;
-}
-///
-unittest {
-	assert([0, 1, 2].hasElement(2));
-	assert(![0, 1, 2].hasElement(4));
-}
-
 /// Returns: true if a string is a number
-auto isNum(string s, bool allowDecimalPoint = true) {
+auto isNum(scope const(char)[] s, bool allowDecimalPoint = true) {
 	if (!s.length)
 		return false;
 	bool hasDecimalPoint = !allowDecimalPoint;
@@ -33,7 +20,7 @@ auto isNum(string s, bool allowDecimalPoint = true) {
 }
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
-auto isAlphabet(string s) {
+auto isAlphabet(in char[] s) {
 	foreach (c; s) {
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z'))
 			return false;
@@ -48,8 +35,11 @@ unittest {
 }
 
 /// Returns: true if the string starts with a white character
-bool startsWithWhite(S)(S s) if (isArray!S) {
-	import std.ascii;
+bool startsWithWhite(S)(S s) if (isArray!S)
+	=> s.length && s[0].isWhite;
 
-	return s.length && s[0].isWhite;
+///
+unittest {
+	assert(startsWithWhite(" a"));
+	assert(!startsWithWhite("a"));
 }
