@@ -8,15 +8,20 @@ auto isNum(scope const(char)[] s, bool allowDecimalPoint = true) {
 	if (!s.length)
 		return false;
 	bool hasDecimalPoint = !allowDecimalPoint;
-	if (s[0] == '-')
-		s = s[1 .. $];
-	foreach (c; s) {
+	foreach (char c; s[s[0] == '-' .. $]) {
 		if (c == '.' && !hasDecimalPoint) {
 			hasDecimalPoint = true;
 		} else if (c < '0' || c > '9')
 			return false;
 	}
 	return true;
+}
+///
+unittest {
+	assert("123".isNum);
+	assert("123.456".isNum);
+	assert(!"123.4a".isNum);
+	assert(!"123.456".isNum(false));
 }
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
