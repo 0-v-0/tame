@@ -1,7 +1,7 @@
 module tame.nogc;
 
-import core.stdc.string : strdup, memcpy, strlen;
-import core.stdc.stdlib : malloc, free;
+import core.stdc.stdlib;
+import core.stdc.string;
 import std.exception : assumeUnique;
 import std.traits;
 
@@ -18,20 +18,14 @@ version (LDC) {
 //
 
 debug {
-	auto assumeNoGC(T)(T t) {
-		static if (isFunctionPointer!T || isDelegate!T) {
-			enum attrs = functionAttributes!T | FunctionAttribute.nogc;
-			return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
-		} else
-			static assert(0);
+	auto assumeNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T) {
+		enum attrs = functionAttributes!T | FunctionAttribute.nogc;
+		return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
 	}
 
-	auto assumeNothrowNoGC(T)(T t) {
-		static if (isFunctionPointer!T || isDelegate!T) {
-			enum attrs = functionAttributes!T | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
-			return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
-		} else
-			static assert(0);
+	auto assumeNothrowNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T) {
+		enum attrs = functionAttributes!T | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
+		return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
 	}
 
 	unittest {

@@ -4,11 +4,11 @@ import std.ascii;
 import std.traits;
 
 /// Returns: true if a string is a number
-auto isNum(scope const(char)[] s, bool allowDecimalPoint = true) {
+auto isNum(in char[] s, bool allowDecimalPoint = true) {
 	if (!s.length)
 		return false;
 	bool hasDecimalPoint = !allowDecimalPoint;
-	foreach (char c; s[s[0] == '-' .. $]) {
+	foreach (c; s[s[0] == '-' .. $]) {
 		if (c == '.' && !hasDecimalPoint) {
 			hasDecimalPoint = true;
 		} else if (c < '0' || c > '9')

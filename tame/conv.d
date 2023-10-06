@@ -1,7 +1,5 @@
 module tame.conv;
 
-nothrow @nogc:
-
 ulong convert(T)(const(T[]) digits, uint radix = 10, size_t* ate = null) {
 	size_t eaten;
 	ulong value;
@@ -16,11 +14,10 @@ ulong convert(T)(const(T[]) digits, uint radix = 10, size_t* ate = null) {
 				break;
 		}
 
-		if ((c -= '0') < radix) {
-			value = value * radix + c;
-			++eaten;
-		} else
+		if ((c -= '0') >= radix)
 			break;
+		value = value * radix + c;
+		++eaten;
 	}
 
 	if (ate)

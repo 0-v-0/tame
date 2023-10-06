@@ -10,10 +10,10 @@ struct Import(string Module) {
 }
 
 template Forward(string member) {
-	ref auto opDispatch(string field, Args...)(auto ref Args args) {
+	pragma(inline, true) ref auto opDispatch(string field, A...)(auto ref A args) {
 		import std.functional : forward;
 
-		static if (Args.length)
+		static if (A.length)
 			mixin("return ", member, ".", field, "(forward!args);");
 		else
 			mixin("return ", member, ".", field, ";");
@@ -122,7 +122,7 @@ unittest {
 A copy of std::tie from C++.
 TODO: write proper documentation for this
 +/
-auto tie(T...)(out T args) {
+auto tie(T...)(ref T args) {
 	struct Impl {
 		void opAssign(U)(U tuple) if (U.length >= T.length) {
 			static foreach (i; 0 .. T.length)

@@ -115,11 +115,11 @@ pure nothrow @safe:
 	@property size_t size() => T.sizeof * slice.length;
 	@property size_t length() => slice.length;
 	alias opDollar = length;
-	@property T* ptr() @trusted => slice.ptr; // must use .ptr here for zero length strings
+	@property T* ptr() @trusted => slice.ptr;
 
 	alias ptr this;
 
-	auto makeOutputRange() {
+	@property outputRange() {
 		struct OutputRange {
 			T* ptr;
 			size_t idx;
@@ -137,9 +137,9 @@ pure nothrow @safe:
 
 TempBuffer!T tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
 	void* buffer = (T.sizeof * length <= maxAlloca) ? alloca(T.sizeof * length) : null) {
-	return TempBuffer!T((cast(T*)(
+	return TempBuffer!T(cast(T*)(
 			buffer ? buffer
-			: malloc(T.sizeof * length)))[0 .. length],
+			: malloc(T.sizeof * length))[0 .. length],
 		buffer is null);
 }
 
@@ -194,7 +194,7 @@ package:
 struct StackBuffer(size_t size) {
 private:
 
-	void[size] space = void;
+	void[size] buf = void;
 	StackBufferEntry!void* last;
 	void* sentinel;
 
@@ -202,15 +202,13 @@ public:
 
 	@disable this(this);
 
-	@trusted
-	StackBufferEntry!T alloc(T)(size_t howMany) {
-		enum max = size_t.max / T.sizeof;
+	StackBufferEntry!T alloc(T)(size_t n) @trusted {
 		alias SBE = StackBufferEntry!T;
-		T* target = cast(T*)(cast(uintptr_t)last.ptr / T.alignof * T.alignof);
-		if (target > space.ptr && cast(uintptr_t)(target - cast(T*)space.ptr) >= howMany)
-			return SBE(target - howMany, last);
+		T* target = cast(T*)(cast(size_t)last.ptr / T.alignof * T.alignof);
+		if (target > buf.ptr && cast(size_t)(target - cast(T*)buf.ptr) >= n)
+			return SBE(target - n, last);
 		else // TODO: Respect alignment here as well by padding. Optionally also embed a length in the heap block, so we can provide slicing of the whole thing.
-			return SBE(howMany <= max ? cast(T*)malloc(T.sizeof * howMany) : null);
+			return SBE(n <= size_t.max / T.sizeof ? cast(T*)malloc(T.sizeof * n) : null);
 	}
 }
 
@@ -246,9 +244,9 @@ public:
 		}
 
 	pure nothrow @nogc:
-		ref inout(T) opIndex(size_t idx) @system inout => ptr[idx];
+		ref inout(T) opIndex(size_t idx) inout => ptr[idx];
 
-		inout(T)[] opSlice(size_t a, size_t b) @system inout => ptr[a .. b];
+		inout(T)[] opSlice(size_t a, size_t b) inout => ptr[a .. b];
 
 		@property auto range() @safe => ptr.asOutputRange();
 	}

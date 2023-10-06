@@ -45,7 +45,6 @@ DateTime parseDateTime(S)(in S input) @safe {
 	import std.regex : match;
 
 	try {
-
 		if (input.match(`\d{8}T\d{6}`)) // ISO String: 'YYYYMMDDTHHMMSS'
 			return DateTime.fromISOString(input);
 		if (input.match(`\d{4}-\D{3}-\d{2}`)) // Simple String 'YYYY-Mon-DD HH:MM:SS'
@@ -286,21 +285,20 @@ void seekPast(char c)(ref const(char)* p) {
  *
  */
 @forceinline
-void skipCharRanges(string cs)(ref const(char)* p) {
+void skipCharRanges(string cs)(ref const(char)* p) if (cs.length % 2 == 0) {
 	import std.range : chunks;
 
 	while (*p) {
-		bool found = false;
-		for (int i = 0; i < cs.length; i += 2) {
+		bool found;
+		for (size_t i = 0; i < cs.length; i += 2) {
 			if (cs[i] <= *p && cs[i + 1] >= *p) {
 				found = true;
 				break;
 			}
 		}
-		if (found)
-			p++;
-		else
+		if (!found)
 			break;
+		p++;
 	}
 	//p.vpcmpistri!(char, cs, Operation.inRanges, Polarity.negate);
 }
@@ -317,17 +315,16 @@ void skipCharRanges(string cs)(ref const(char)* p) {
 @forceinline
 void skipAllOf(string cs)(ref const(char)* p) {
 	while (*p) {
-		bool found = false;
+		bool found;
 		foreach (c; cs) {
 			if (c == *p) {
 				found = true;
 				break;
 			}
 		}
-		if (found)
-			p++;
-		else
+		if (!found)
 			break;
+		p++;
 	}
 
 	//p.vpcmpistri!(char, cs, Operation.equalAnyElem, Polarity.negate);

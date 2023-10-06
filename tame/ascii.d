@@ -4,8 +4,7 @@ version (Windows)
 	import core.stdc.string : memicmp;
 else version (Posix) {
 package:
-	pure nothrow @nogc @system extern (C) int strncasecmp(in char*, in char*, size_t);
-	alias memicmp = strncasecmp;
+	import core.sys.posix.strings : memicmp = strncasecmp;
 } else
 	static assert(0, "Unsupported platform");
 
@@ -40,15 +39,10 @@ T[] toUpper(T)(T[] src) {
 +/
 
 int icompare(in char[] s1, in char[] s2) @trusted nothrow @nogc {
-	auto len = s1.length;
-	if (s2.length < len)
-		len = s2.length;
+	const len = s1.length > s2.length ? s2.length : s1.length;
 
-	auto result = memicmp(s1.ptr, s2.ptr, cast(int)len);
-
-	if (result == 0)
-		result = cast(int)s1.length - cast(int)s2.length;
-	return result;
+	const result = memicmp(s1.ptr, s2.ptr, len);
+	return result ? result : (s1.length > s2.length) - (s1.length < s2.length);
 }
 
 /+
@@ -56,15 +50,10 @@ int icompare(in char[] s1, in char[] s2) @trusted nothrow @nogc {
 +/
 
 auto compare(in char[] s1, in char[] s2) @trusted {
-	auto len = s1.length;
-	if (s2.length < len)
-		len = s2.length;
+	const len = s1.length > s2.length ? s2.length : s1.length;
 
-	auto result = memcmp(s1.ptr, s2.ptr, cast(int)len);
-
-	if (result == 0)
-		result = cast(int)s1.length - cast(int)s2.length;
-	return result;
+	const result = memcmp(s1.ptr, s2.ptr, cast(int)len);
+	return result ? result : (s1.length > s2.length) - (s1.length < s2.length);
 }
 
 /+
@@ -110,7 +99,7 @@ in (src.ptr && pattern.ptr) {
 		'\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
 	];
 
-	int d = cast(int)(src.length - pattern.length);
+	const d = cast(int)(src.length - pattern.length);
 	for (int i1 = 0, i2 = void; i1 <= d; ++i1) {
 		for (i2 = 0; i2 < pattern.length; ++i2)
 			if (_caseMap[src[i1 + i2]] != _caseMap[pattern[i2]])
