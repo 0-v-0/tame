@@ -111,7 +111,7 @@ pure nothrow @safe:
 	T[] opSlice() => slice[];
 	T[] opSlice(size_t a, size_t b) => slice[a .. b];
 	T[] opSliceAssign(const(T)[] value, size_t a, size_t b) => slice[a .. b] = value;
-	ref T opIndex(size_t idx) => slice[idx];
+	ref T opIndex(size_t i) => slice[i];
 	@property size_t size() => T.sizeof * slice.length;
 	@property size_t length() => slice.length;
 	alias opDollar = length;
@@ -189,7 +189,90 @@ auto asOutputRange(T)(T* t) {
 	return PointerRange(t, t);
 }
 
-package:
+import core.memory,
+std.algorithm : max, min;
+
+struct Sink(T) {
+	T[] buf;
+	private size_t _len;
+pure @nogc nothrow @safe:
+	@disable this(this);
+
+	this(in T[] s) {
+		put(s);
+	}
+
+	~this() @trusted {
+		pureFree(buf.ptr);
+	}
+
+	@property length() const => _len;
+	@property void length(size_t n) {
+		_len = n;
+	}
+
+	@property capacity() const => buf.length;
+	@property void capacity(size_t n) scope @trusted {
+		import core.checkedint : mulu;
+		import core.exception;
+
+		bool overflow;
+		size_t reqsize = mulu(T.sizeof, n, overflow);
+		if (!overflow) {
+			buf = (cast(T*)pureRealloc(buf.ptr, reqsize))[0 .. n];
+			if (!buf)
+				onOutOfMemoryError();
+		} else
+			onOutOfMemoryError();
+	}
+
+	alias opDollar = length;
+	alias opOpAssign(string op : "~") = put;
+
+	void reserve(size_t n) scope {
+		if (n > buf.length)
+			capacity = n;
+	}
+
+	private void ensureAvail(size_t n) scope {
+		import core.bitop : bsr;
+
+		if ((n += _len) > buf.length) {
+
+			// Note: new length calculation taken from std.array.appenderNewCapacity
+			const mult = 100 + size_t(1000) / (bsr(n) + 1);
+			capacity = max(n, (n * min(mult, 200) + 99) / 100);
+		}
+	}
+
+	void put(in T c) scope {
+		ensureAvail(1);
+		buf[_len++] = c;
+	}
+
+	void put(in T[] s) scope {
+		ensureAvail(s.length);
+		buf[_len .. _len + s.length] = s;
+		_len += s.length;
+	}
+
+	void clear() scope {
+		_len = 0;
+	}
+
+	ref inout(T) opIndex(size_t i) inout
+	in (i < _len)
+		=> buf[i];
+
+	inout(T)[] opSlice() inout => buf[0 .. _len];
+	inout(T)[] data() inout => buf[0 .. _len];
+
+	inout(T)[] opSlice(size_t a, size_t b) inout
+	in (a <= b && b <= _len)
+		=> buf[a .. b];
+}
+
+alias StringSink = Sink!char;
 
 struct StackBuffer(size_t size) {
 private:
@@ -244,7 +327,7 @@ public:
 		}
 
 	pure nothrow @nogc:
-		ref inout(T) opIndex(size_t idx) inout => ptr[idx];
+		ref inout(T) opIndex(size_t i) inout => ptr[i];
 
 		inout(T)[] opSlice(size_t a, size_t b) inout => ptr[a .. b];
 

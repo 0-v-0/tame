@@ -17,12 +17,22 @@ version (X86_64) {
 
 version (LDC) {
 	import ldc.attributes;
+	import ldc.intrinsics : _expect = llvm_expect;
 
 	enum noinline = optStrategy("none");
 	enum forceinline = llvmAttr("always_inline", "true");
 	enum sse4_2 = target("+sse4.2");
 } else version (GNU) {
 	import gcc.attribute;
+	import gcc.builtins : __builtin_expect, __builtin_clong;
+
+	///
+	T _expect(T)(in T val, in T expected) if (__traits(isIntegral, T)) {
+		static if (T.sizeof <= __builtin_clong.sizeof)
+			return cast(T)__builtin_expect(val, expected);
+		else
+			return val;
+	}
 
 	enum noinline = attribute("noinline");
 	enum forceinline = attribute("forceinline");
@@ -31,6 +41,10 @@ version (LDC) {
 	enum noinline;
 	enum forceinline;
 	enum sse4;
+
+	T _expect(T)(T val, T expected) if (__traits(isIntegral, T)) {
+		return val;
+	}
 }
 
 pure nothrow @nogc:

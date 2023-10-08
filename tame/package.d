@@ -7,4 +7,5 @@ tame.meta,
 tame.misc,
 tame.nogc,
 tame.parse,
+tame.string,
 tame.uri;
