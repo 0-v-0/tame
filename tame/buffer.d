@@ -49,7 +49,7 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 	}
 
 	/// append
-	auto opOpAssign(string op : "~", S)(S rhs) if (S.sizeof == 1) {
+	void opOpAssign(string op : "~", S)(S rhs) if (S.sizeof == 1) {
 		if (pos == LEN) {
 			outputFunc(buf[]);
 			pos = 0;
@@ -58,7 +58,7 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 	}
 
 	/// ditto
-	auto opOpAssign(string op : "~", S)(ref S rhs) if (S.sizeof > 1) {
+	void opOpAssign(string op : "~", S)(ref S rhs) if (S.sizeof > 1) {
 		this ~= (cast(T*)&rhs)[0 .. S.sizeof];
 	}
 
@@ -245,14 +245,14 @@ pure @nogc nothrow @safe:
 		}
 	}
 
-	void put(in T c) scope {
+	void put(in T c) scope @trusted {
 		ensureAvail(1);
-		buf[_len++] = c;
+		buf[_len++] = cast(T)c;
 	}
 
-	void put(in T[] s) scope {
+	void put(in T[] s) scope @trusted {
 		ensureAvail(s.length);
-		buf[_len .. _len + s.length] = s;
+		buf[_len .. _len + s.length] = cast(T[])s;
 		_len += s.length;
 	}
 
@@ -265,7 +265,7 @@ pure @nogc nothrow @safe:
 		=> buf[i];
 
 	inout(T)[] opSlice() inout => buf[0 .. _len];
-	inout(T)[] data() inout => buf[0 .. _len];
+	alias data = opSlice;
 
 	inout(T)[] opSlice(size_t a, size_t b) inout
 	in (a <= b && b <= _len)

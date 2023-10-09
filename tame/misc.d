@@ -1,50 +1,67 @@
 module tame.misc;
 
-import std.ascii;
-import std.traits;
+import std.ascii,
+std.meta,
+std.traits;
 
-/// Returns: true if a string is a number
-auto isNum(in char[] s, bool allowDecimalPoint = true) {
-	if (!s.length)
-		return false;
-	bool hasDecimalPoint = !allowDecimalPoint;
-	foreach (c; s[s[0] == '-' .. $]) {
-		if (c == '.' && !hasDecimalPoint) {
-			hasDecimalPoint = true;
-		} else if (c < '0' || c > '9')
-			return false;
+package:
+
+int numDigits(T : ulong)(T num) @trusted {
+	alias U = AliasSeq!(uint, ulong)[T.sizeof / 8];
+	static if (isSigned!T) {
+		int digits = void;
+		U n = void;
+		if (num <= 0) {
+			digits = 1;
+			n = -num;
+		} else {
+			digits = 0;
+			n = num;
+		}
+	} else {
+		int digits = num == 0;
+		U n = num;
 	}
-	return true;
-}
-///
-unittest {
-	assert("123".isNum);
-	assert("123.456".isNum);
-	assert(!"123.4a".isNum);
-	assert(!"123.456".isNum(false));
+	for (; n; digits++)
+		n /= 10;
+	return digits;
 }
 
-/// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
-auto isAlphabet(in char[] s) {
-	foreach (c; s) {
-		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z'))
-			return false;
+@safe unittest {
+	assert(numDigits(0) == 1);
+	assert(numDigits(11) == 2);
+	assert(numDigits(-1) == 2);
+	assert(numDigits(-123) == 4);
+
+	assert(numDigits(int.min) == 11);
+	assert(numDigits(int.max) == 10);
+	assert(numDigits(long.min) == 20);
+	assert(numDigits(long.max) == 19);
+	assert(numDigits(ulong.min) == 1);
+	assert(numDigits(ulong.max) == 20);
+
+	foreach (i; 0 .. 20) {
+		assert(numDigits(10UL ^^ i) == i + 1);
 	}
-	return true;
-}
-///
-unittest {
-	assert("aBcDEf".isAlphabet == true);
-	assert("ABCd_".isAlphabet == false);
-	assert("ABC12".isAlphabet == false);
 }
 
-/// Returns: true if the string starts with a white character
-bool startsWithWhite(S)(S s) if (isArray!S)
-	=> s.length && s[0].isWhite;
+/**
+ * Match types like `std.typecons.Nullable` ie `mir.core.Nullable`
+ */
+template isStdNullable(T) {
+	T* aggregate;
 
-///
-unittest {
-	assert(startsWithWhite(" a"));
-	assert(!startsWithWhite("a"));
+	enum bool isStdNullable =
+		hasMember!(T, "isNull") &&
+		hasMember!(T, "get") &&
+		hasMember!(T, "nullify") &&
+		is(typeof(__traits(getMember, aggregate, "isNull")()) == bool) &&
+		!is(typeof(__traits(getMember, aggregate, "get")()) == void) &&
+		is(typeof(__traits(getMember, aggregate, "nullify")()) == void);
+}
+
+version (D_Exceptions) unittest {
+	import std.typecons : Nullable;
+
+	static assert(isStdNullable!(Nullable!string));
 }

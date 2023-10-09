@@ -1,5 +1,7 @@
 module tame.string;
 
+import tame.ascii,
+std.ascii : isWhite;
 import core.stdc.string : memchr;
 
 pure nothrow @nogc @safe:
@@ -45,3 +47,43 @@ ptrdiff_t indexOf(in char[] s, char c) @trusted {
 	const p = memchr(s.ptr, c, s.length);
 	return p ? p - cast(void*)s.ptr : -1;
 }
+
+S stripLeft(S)(S input) {
+	size_t i;
+	for (; i < input.length; ++i) {
+		if (!isWhite(input[i]))
+			break;
+	}
+	return input[i .. $];
+}
+
+S stripRight(S)(S input) {
+	size_t i = input.length;
+	for (; i; --i) {
+		if (!isWhite(input[i - 1]))
+			break;
+	}
+	return input[0 .. i];
+}
+
+S strip(S)(S input) {
+	size_t i = input.length;
+	for (; i; --i) {
+		if (!isWhite(input[i - 1]))
+			break;
+	}
+	size_t j;
+	for (; j < i; ++j) {
+		if (!isWhite(input[j]))
+			break;
+	}
+	return input[j .. i];
+}
+
+bool startsWith(in char[] input, in char[] prefix)
+	=> prefix.length <= input.length &&
+	compare(input[0 .. prefix.length], prefix) == 0;
+
+bool endsWith(in char[] input, in char[] suffix)
+	=> suffix.length <= input.length &&
+	compare(input[input.length - suffix.length .. $], suffix) == 0;
