@@ -57,10 +57,28 @@ S stripLeft(S)(S input) {
 	return input[i .. $];
 }
 
+S stripLeft(S)(S input, char c) {
+	size_t i;
+	for (; i < input.length; ++i) {
+		if (input[i] != c)
+			break;
+	}
+	return input[i .. $];
+}
+
 S stripRight(S)(S input) {
 	size_t i = input.length;
 	for (; i; --i) {
 		if (!isWhite(input[i - 1]))
+			break;
+	}
+	return input[0 .. i];
+}
+
+S stripRight(S)(S input, char c) {
+	size_t i = input.length;
+	for (; i; --i) {
+		if (input[i - 1] != c)
 			break;
 	}
 	return input[0 .. i];
@@ -75,6 +93,20 @@ S strip(S)(S input) {
 	size_t j;
 	for (; j < i; ++j) {
 		if (!isWhite(input[j]))
+			break;
+	}
+	return input[j .. i];
+}
+
+S strip(S)(S input, char c) {
+	size_t i = input.length;
+	for (; i; --i) {
+		if (input[i - 1] != c)
+			break;
+	}
+	size_t j;
+	for (; j < i; ++j) {
+		if (input[j] != c)
 			break;
 	}
 	return input[j .. i];

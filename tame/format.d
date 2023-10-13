@@ -70,15 +70,6 @@ private template isDuration(T) {
 		enum isDuration = is(T == Duration);
 }
 
-private template isTraceInfo(T) {
-	version (D_BetterC)
-		enum isTraceInfo = false;
-	else version (linux)
-		enum isTraceInfo = is(T == TraceInfo);
-	else
-		enum isTraceInfo = false;
-}
-
 /**
  * Formats values to with fmt template into provided sink.
  * Note: it supports only a basic subset of format type specifiers, main usage is for nogc logging
@@ -145,7 +136,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 				if (val.isNull)
 					write("null");
 				else
-					advance(s.nogcFormatTo!"%s"(val.get));
+					advance(s.nogcFormatTo(val.get));
 			} else static if (f == FMT.STR) {
 				static if ((isArray!U && is(Unqual!(ForeachType!U) == char)))
 					write(val[]);
@@ -200,25 +191,15 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 						else
 							enum prefix = (i == 0 ? "" : ", ") ~ U.fieldNames[i] ~ "=";
 						write(prefix);
-						advance(s.nogcFormatTo!"%s"(val[i]));
+						advance(s.nogcFormatTo(val[i]));
 					}
 					write(")");
 				} else static if (is(U : Throwable)) {
-					auto obj = cast(Object)val;
-					static if (__traits(compiles, TraceInfo(val))) {
-						advance(s.nogcFormatTo!"%s@%s(%d): %s\n----------------\n%s"(
-								typeid(obj)
-								.name, val.file, val.line, val.msg, TraceInfo(val)));
-					} else
-						advance(s.nogcFormatTo!"%s@%s(%d): %s"(
-								typeid(obj)
-								.name, val.file, val.line, val.msg));
-				} else static if (isTraceInfo!U) {
-					auto sw = sinkWrap(s);
-					val.dumpTo(sw);
-					advance(sw.totalLen);
+					advance(s.nogcFormatTo!"%s@%s(%d): %s"(
+							typeid(val)
+							.name, val.file, val.line, val.msg));
 				} else static if (is(typeof(val[])))
-					advance(s.nogcFormatTo!"%s"(val[])); // sliceable values
+					advance(s.nogcFormatTo(val[])); // sliceable values
 				else static if (is(U == struct)) {
 					static if (__traits(compiles, (v)@nogc {
 							auto sw = sinkWrap(s);
@@ -240,7 +221,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 							enum string Name = Names[i];
 							enum Prefix = (i == 0 ? "" : ", ") ~ Name ~ "=";
 							write(Prefix);
-							advance(s.nogcFormatTo!"%s"(field));
+							advance(s.nogcFormatTo(field));
 						}
 						write(")");
 					}
@@ -462,40 +443,6 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 	char[512] buf;
 	auto l = buf.nogcFormatTo(c);
 	assert(buf[0 .. l] == "custom: foo=42");
-}
-
-version (D_Exceptions) version (linux) {
-	// Only Posix is supported ATM
-	@"Exception stack trace format"unittest {
-		import std.algorithm : startsWith;
-
-		static class TestException : Exception {
-			this(string msg) nothrow {
-				super(msg);
-			}
-		}
-
-		static void fn() {
-			throw new TestException("foo");
-		}
-
-		try
-			fn();
-		catch (Exception ex) {
-			import std.format : format;
-
-			string std = () @trusted {
-				return format!"Now how cool is that!: %s"(ex);
-			}();
-			(Exception ex, string std) nothrow @nogc @trusted {
-				auto str = nogcFormat!"Now how cool is that!: %s"(ex);
-				assert(str.startsWith("Now how cool is that!: bc.string.format.__unittest_L"));
-				// import core.stdc.stdio; printf("%s\nvs\n%s\n", std.ptr, str.ptr);
-				// we try to reflect last compiler behavior, previous might differ
-				assert(str[0 .. $] == std[0 .. $]);
-			}(ex, std);
-		}
-	}
 }
 
 string text(T...)(auto ref T args) @trusted if (T.length) {
