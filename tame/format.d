@@ -318,7 +318,7 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 	assert(nogcFormat!"0x%x"(0x1234) == "0x1234");
 
 	// %p
-	assert(nogcFormat!("%p")(0x1234) == "0000000000001234");
+	assert(nogcFormat!"%p"(0x1234) == "0000000000001234");
 
 	// %s
 	assert(nogcFormat!"12345%s"("12345") == "1234512345");
@@ -331,27 +331,19 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 
 	assert(nogcFormat!"12345%s"(Floop.YYY) == "12345YYY");
 	char[4] str = "foo\0";
-	assert(() @trusted { return nogcFormat!"%s"(str.ptr); }() == "foo");
+	assert((() => nogcFormat(str.ptr))() == "foo");
 
-	version (D_BetterC) {
-	} else {
-		assert(nogcFormat!"%s"(
+	static if (is(typeof(UUID)))
+		assert(nogcFormat(
 				UUID([
 				138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189,
 				251, 70
-		]))
-			== "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
-	}
+	])) == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
 
 	// array format
 	version (D_BetterC) {
-		int[] arr = (
-			() => (cast(int*)enforceMalloc(int.sizeof * 10))[0 .. 10]
-		)();
-		foreach (i; 0 .. 10)
-			arr[i] = i;
-		scope (exit)
-			() @trusted { pureFree(arr.ptr); }();
+		int[10] array = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+		int[] arr = array[];
 	} else
 		auto arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -383,17 +375,13 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 		int x, y;
 	}
 
-	assert(nogcFormat!("Hello %s")(Foo(1, 2)) == "Hello Foo(x=1, y=2)");
+	assert(nogcFormat!"Hello %s"(Foo(1, 2)) == "Hello Foo(x=1, y=2)");
 
 	version (D_BetterC) {
 		struct Nullable(T) { // can't be instanciated in betterC - fake just for the UT
-			T get() {
-				return T.init;
-			}
+			T get() => T.init;
 
-			bool isNull() {
-				return true;
-			}
+			bool isNull() => true;
 
 			void nullify() {
 			}
@@ -405,10 +393,10 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 		Nullable!string foo;
 	}
 
-	assert(nogcFormat!"%s"(Msg.init) == "Msg(foo=null)");
+	assert(nogcFormat(Msg.init) == "Msg(foo=null)");
 
 	StringSink s = "abcd";
-	assert(nogcFormat!"%s"(s) == "abcd");
+	assert(nogcFormat(s) == "abcd");
 }
 
 ///

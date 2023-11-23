@@ -4,9 +4,6 @@ import std.traits : hasMember, hasIndirections;
 /*
  * Simple queue implemented as a singly linked list with a tail pointer.
  *
- * Needed in some D:YAML code that needs a queue-like structure without too much
- * reallocation that goes with an array.
- *
  * Allocations are non-GC and are damped by a free-list based on the nodes
  * that are removed. Note that elements lifetime must be managed
  * outside.
