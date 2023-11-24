@@ -18,16 +18,16 @@ struct Splitter(S : C[], C) if (C.sizeof == 1) {
 
 	@property bool empty() const => s.length == 0;
 
-	S front() @trusted {
+	@property S front() @trusted {
 		if (!frontLen) {
 			const p = memchr(s.ptr, ' ', s.length);
-			frontLen = p ? p - cast(void*)s.ptr + 1 : s.length;
+			frontLen = p ? p - cast(void*)s.ptr : s.length;
 		}
 		return s[0 .. frontLen];
 	}
 
 	void popFront() {
-		s = s[frontLen .. $];
+		s = s[frontLen + (frontLen < s.length) .. $];
 		frontLen = 0;
 	}
 }
@@ -35,12 +35,41 @@ struct Splitter(S : C[], C) if (C.sizeof == 1) {
 auto splitter(S, C)(S input, C separator = ' ')
 	=> Splitter!S(input, separator);
 
+unittest {
+	{
+		auto s = splitter("foo");
+		assert(s.front == "foo");
+		s.popFront;
+		assert(s.empty);
+	}
+	auto s = splitter("foo bar baz");
+	assert(s.front == "foo");
+	s.popFront;
+	assert(s.front == "bar");
+	s.popFront;
+	assert(s.front == "baz");
+	s.popFront;
+	assert(s.empty);
+}
+
 bool canFind(in char[] s, char c) @trusted
 	=> memchr(s.ptr, c, s.length) !is null;
+
+unittest {
+	assert(canFind("foo", 'o'));
+	assert(!canFind("foo", 'z'));
+}
 
 ptrdiff_t indexOf(in char[] s, char c) @trusted {
 	const p = memchr(s.ptr, c, s.length);
 	return p ? p - cast(void*)s.ptr : -1;
+}
+
+unittest {
+	assert(indexOf("hello", 'h') == 0);
+	assert(indexOf("hello", 'e') == 1);
+	assert(indexOf("hello", 'o') == 4);
+	assert(indexOf("hello", 'z') == -1);
 }
 
 S stripLeft(S)(S input) {
@@ -52,6 +81,10 @@ S stripLeft(S)(S input) {
 	return input[i .. $];
 }
 
+unittest {
+	assert(stripLeft(" foo") == "foo");
+}
+
 S stripLeft(S)(S input, char c) {
 	size_t i;
 	for (; i < input.length; ++i) {
@@ -59,6 +92,12 @@ S stripLeft(S)(S input, char c) {
 			break;
 	}
 	return input[i .. $];
+}
+
+unittest {
+	assert(stripLeft(" foo") == "foo");
+	assert(stripLeft("  foo", ' ') == "foo");
+	assert(stripLeft("  foo", 'h') == "  foo");
 }
 
 S stripRight(S)(S input) {
@@ -70,6 +109,11 @@ S stripRight(S)(S input) {
 	return input[0 .. i];
 }
 
+unittest {
+	assert(stripRight(" foo") == " foo");
+	assert(stripRight("foo ") == "foo");
+}
+
 S stripRight(S)(S input, char c) {
 	size_t i = input.length;
 	for (; i; --i) {
@@ -77,6 +121,13 @@ S stripRight(S)(S input, char c) {
 			break;
 	}
 	return input[0 .. i];
+}
+
+unittest {
+	assert(stripRight(" foo") == " foo");
+	assert(stripRight("foo ") == "foo");
+	assert(stripRight("foo ", ' ') == "foo");
+	assert(stripRight("foo ", 'o') == "foo ");
 }
 
 S strip(S)(S input) {
@@ -107,10 +158,30 @@ S strip(S)(S input, char c) {
 	return input[j .. i];
 }
 
+unittest {
+	assert(strip(" foo") == "foo");
+	assert(strip(" foo", ' ') == "foo");
+	assert(strip(" foo", 'f') == " foo");
+}
+
 bool startsWith(in char[] input, in char[] prefix)
 	=> prefix.length <= input.length &&
 	compare(input[0 .. prefix.length], prefix) == 0;
 
+unittest {
+	assert(startsWith("hello", "he"));
+	assert(!startsWith("hello", "hi"));
+	assert(!startsWith("hello", "hello world"));
+	assert(startsWith("hello", ""));
+}
+
 bool endsWith(in char[] input, in char[] suffix)
 	=> suffix.length <= input.length &&
 	compare(input[input.length - suffix.length .. $], suffix) == 0;
+
+unittest {
+	assert(endsWith("hello", "lo"));
+	assert(!endsWith("hello", "hi"));
+	assert(!endsWith("hello", "hello world"));
+	assert(endsWith("hello", ""));
+}
