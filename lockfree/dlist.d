@@ -148,9 +148,8 @@ shared class AtomicDList(T) {
 
 		while (true) {
 			auto next = cursor._next;
-			if (haslsb(next)) {
+			if (haslsb(next))
 				return null;
-			}
 			if (cas(&node._next, next, setlsb(next))) {
 				shared(Node)* prev;
 				while (true) {

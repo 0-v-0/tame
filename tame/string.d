@@ -18,7 +18,7 @@ struct Splitter(S : C[], C) if (C.sizeof == 1) {
 
 	@property bool empty() const => s.length == 0;
 
-	@property S front() @trusted {
+	@property S front() scope @trusted {
 		if (!frontLen) {
 			const p = memchr(s.ptr, ' ', s.length);
 			frontLen = p ? p - cast(void*)s.ptr : s.length;

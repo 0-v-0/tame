@@ -135,13 +135,12 @@ pure nothrow @safe:
 	}
 }
 
-TempBuffer!T tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
-	void* buffer = (T.sizeof * length <= maxAlloca) ? alloca(T.sizeof * length) : null) {
-	return TempBuffer!T(cast(T*)(
+auto tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
+	void* buffer = (T.sizeof * length <= maxAlloca) ? alloca(T.sizeof * length) : null)
+	=> TempBuffer!T(cast(T*)(
 			buffer ? buffer
 			: malloc(T.sizeof * length))[0 .. length],
 		buffer is null);
-}
 
 /*
  *

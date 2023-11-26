@@ -853,12 +853,11 @@ size_t formatPtr(S)(auto ref scope S sink, ulong p) @trusted
 
 size_t formatPtr(S)(auto ref scope S sink, const void* ptr) {
 	mixin SinkWriter!S;
-	if (ptr) {
+	if (ptr)
 		return sink.formatHex!((void*).sizeof * 2)(cast(ptrdiff_t)ptr);
-	} else {
-		write("null");
-		return 4;
-	}
+
+	write("null");
+	return 4;
 }
 
 @"pointer"unittest {
