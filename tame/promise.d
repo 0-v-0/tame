@@ -41,6 +41,19 @@ struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 		bool isRejected() const => !isPending && exception !is null;
 	}
 
+	this(void delegate(ResolveFunc!T resolve) executer)
+	in (executer) {
+		next = noop;
+		executer((Arg!T) {
+			if (isPending) {
+				static if (!is(T == void))
+					value = __traits(parameters)[0];
+				hasValue = true;
+				next();
+			}
+		});
+	}
+
 	this(void delegate(ResolveFunc!T resolve) nothrow executer) nothrow
 	in (executer) {
 		next = noop;
@@ -210,8 +223,7 @@ in (dg) {
 	});
 }
 
-T await(T)(Promise!T promise)
-in (cast(Generator!(Promise!T))Fiber.getThis()) {
+T await(T)(Promise!T promise) {
 	yield(promise);
 
 	if (promise.isFulfilled) {

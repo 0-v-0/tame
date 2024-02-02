@@ -1,6 +1,7 @@
 module lockfree.rwqueue;
 
 import core.atomic;
+import core.bitop : bsr;
 
 /**
  * A Lock-Free Single-Reader, Single-Writer (SRSW) FIFO queue.
@@ -47,11 +48,7 @@ private:
 
 enum PAGE_SIZE = 4096;
 
-template roundPow2(size_t v) {
-	import core.bitop : bsr;
-
-	enum roundPow2 = v ? cast(size_t)1 << bsr(v) : 0;
-}
+enum roundPow2(size_t v) = v ? cast(size_t)1 << bsr(v) : 0;
 
 unittest {
 	static assert(roundPow2!0 == 0);
