@@ -6,49 +6,56 @@ import core.bitop : bsr;
 /**
  * A Lock-Free Single-Reader, Single-Writer (SRSW) FIFO queue.
  */
-shared struct RWQueue(T, size_t capacity = roundPow2!(PAGE_SIZE / T.sizeof))
-if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
+struct RWQueue(T, size_t N = roundPow2!(PAGE_SIZE / T.sizeof)) if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
 {
-	static assert(capacity, "Cannot have a capacity of 0.");
-	static assert(roundPow2!capacity == capacity, "The capacity must be a power of 2");
+	static assert(N, "Cannot have a capacity of 0.");
+	static assert(roundPow2!N == N, "The capacity must be a power of 2");
+	enum capacity = N;
 
-	@property size_t length() shared const => atomicLoad!(MemoryOrder.acq)(_wpos) - atomicLoad!(
-		MemoryOrder.acq)(_rpos);
+	@property size_t length() const => atomicLoad!(MO.acq)(_wpos) - atomicLoad!(MO.acq)(_rpos);
 
-	@property bool empty() shared const => !length;
+	@property bool empty() const => !length;
 
 	@property bool full() const => length == capacity;
 
-	void push(shared in T t)
+	@property ref front()
+	in (!empty) => _data[atomicLoad!(MO.acq)(_rpos) & mask];
+
+	void push(in T t)
 	in (!full) {
-		immutable pos = atomicLoad!(MemoryOrder.acq)(_wpos);
+		immutable pos = atomicLoad!(MO.acq)(_wpos);
 		_data[pos & mask] = t;
-		atomicStore!(MemoryOrder.rel)(_wpos, pos + 1);
+		atomicStore!(MO.rel)(_wpos, pos + 1);
 	}
 
-	shared(T) pop()
+	T pop()
 	in (!empty) {
-		immutable pos = atomicLoad!(MemoryOrder.acq)(_rpos);
+		immutable pos = atomicLoad!(MO.acq)(_rpos);
 		auto res = _data[pos & mask];
-		atomicStore!(MemoryOrder.rel)(_rpos, pos + 1);
+		atomicStore!(MO.rel)(_rpos, pos + 1);
 		return res;
 	}
 
-private:
-	//    import std.algorithm; // move
+	void clear() {
+		atomicStore!(MO.rel)(_wpos, 0);
+		atomicStore!(MO.rel)(_rpos, 0);
+	}
 
-	enum mask = capacity - 1;
+private:
+	enum mask = N - 1;
 
 	size_t _wpos;
 	size_t _rpos;
-	T[capacity] _data;
+	T[N] _data;
 }
 
 private:
 
+alias MO = MemoryOrder;
+
 enum PAGE_SIZE = 4096;
 
-enum roundPow2(size_t v) = v ? cast(size_t)1 << bsr(v) : 0;
+enum roundPow2(size_t v) = v ? size_t(1) << bsr(v) : 0;
 
 unittest {
 	static assert(roundPow2!0 == 0);
@@ -61,19 +68,19 @@ version (unittest) {
 
 	enum amount = 500_000;
 
-	void push(T)(ref shared(RWQueue!T) queue) {
+	void push(T)(ref RWQueue!T queue) {
 		foreach (i; 0 .. amount) {
 			while (queue.full)
 				Thread.yield();
-			queue.push(shared T(i));
+			queue.push(T(i));
 		}
 	}
 
-	void pop(T)(ref shared(RWQueue!T) queue) {
+	void pop(T)(ref RWQueue!T queue) {
 		foreach (i; 0 .. amount) {
 			while (queue.empty)
 				Thread.yield();
-			assert(queue.pop() == shared T(i));
+			assert(queue.pop() == T(i));
 		}
 	}
 }
@@ -84,7 +91,7 @@ unittest {
 	StopWatch sw;
 	sw.start;
 
-	shared(RWQueue!double) queue;
+	RWQueue!double queue;
 	auto t0 = new Thread({ push(queue); }),
 	t1 = new Thread({ pop(queue); });
 	t0.start();
@@ -93,8 +100,9 @@ unittest {
 	t1.join();
 
 	sw.stop;
-	writeln("Duration: ", sw.peek.total!"usecs", " microseconds");
-	writeln("Framerate: ", 1e6 / sw.peek.total!"usecs", " frames per second");
+	auto usecs = sw.peek.total!"usecs";
+	writeln("Duration: ", usecs, " usecs");
+	writeln("Framerate: ", 1e6 * amount / usecs, " frames per second");
 }
 
 unittest {
@@ -102,7 +110,7 @@ unittest {
 		size_t i;
 	}
 
-	shared(RWQueue!Data) queue;
+	RWQueue!Data queue;
 	auto t0 = new Thread({ push(queue); }),
 	t1 = new Thread({ pop(queue); });
 	t0.start();

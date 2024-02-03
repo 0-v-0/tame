@@ -63,7 +63,7 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 	}
 
 	/// ditto
-	auto ref opOpAssign(string op : "~")(in void[] rhs) {
+	ref opOpAssign(string op : "~")(in void[] rhs) {
 		import core.stdc.string;
 
 		auto s = cast(void[])rhs;

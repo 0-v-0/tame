@@ -126,6 +126,7 @@ unittest {
 	t1.join();
 
 	sw.stop;
-	writeln("Duration: ", sw.peek.total!"usecs", " usecs");
-	writeln("Framerate: ", 1e6 * amount / sw.peek.total!"usecs", " frames per second");
+	auto usecs = sw.peek.total!"usecs";
+	writeln("Duration: ", usecs, " usecs");
+	writeln("Framerate: ", 1e6 * amount / usecs, " frames per second");
 }
