@@ -6,7 +6,8 @@ import core.stdc.string : memchr;
 
 pure nothrow @nogc @safe:
 
-struct Splitter(S : C[], C) if (C.sizeof == 1) {
+struct Splitter(bool keepSeparators = false, S:
+	C[], C) if (C.sizeof == 1) {
 	S s;
 	size_t frontLen;
 	C sep;
@@ -20,32 +21,59 @@ struct Splitter(S : C[], C) if (C.sizeof == 1) {
 
 	@property S front() scope @trusted {
 		if (!frontLen) {
-			const p = memchr(s.ptr, ' ', s.length);
-			frontLen = p ? p - cast(void*)s.ptr : s.length;
+			const p = memchr(s.ptr, sep, s.length);
+			frontLen = p ? p - cast(void*)s.ptr + keepSeparators : s.length;
 		}
 		return s[0 .. frontLen];
 	}
 
 	void popFront() {
-		s = s[frontLen + (frontLen < s.length) .. $];
+		static if(keepSeparators) {
+			s = s[frontLen .. $];
+		} else {
+			s = s[frontLen + (frontLen < s.length) .. $];
+		}
 		frontLen = 0;
 	}
 }
 
-auto splitter(S, C)(S input, C separator = ' ')
-	=> Splitter!S(input, separator);
+auto splitter(bool keepSeparators = false, S, C)(S input, C separator = ' ')
+	=> Splitter!(keepSeparators, S)(input, separator);
+
+unittest {
+	auto s = splitter("foo");
+	assert(!s.empty);
+	assert(s.front == "foo");
+	s.popFront;
+	assert(s.empty);
+}
 
 unittest {
 	{
-		auto s = splitter("foo");
+		auto s = splitter("foo bar baz");
 		assert(s.front == "foo");
+		s.popFront;
+		assert(s.front == "bar");
+		s.popFront;
+		assert(s.front == "baz");
 		s.popFront;
 		assert(s.empty);
 	}
-	auto s = splitter("foo bar baz");
+	auto s = "foo,bar,baz".splitter(',');
 	assert(s.front == "foo");
 	s.popFront;
 	assert(s.front == "bar");
+	s.popFront;
+	assert(s.front == "baz");
+	s.popFront;
+	assert(s.empty);
+}
+
+unittest {
+	auto s = splitter!true("foo bar baz");
+	assert(s.front == "foo ");
+	s.popFront;
+	assert(s.front == "bar ");
 	s.popFront;
 	assert(s.front == "baz");
 	s.popFront;

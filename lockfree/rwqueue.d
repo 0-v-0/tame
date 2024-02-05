@@ -21,7 +21,14 @@ struct RWQueue(T, size_t N = roundPow2!(PAGE_SIZE / T.sizeof)) if (T.sizeof) // 
 	@property ref front()
 	in (!empty) => _data[atomicLoad!(MO.acq)(_rpos) & mask];
 
-	void push(in T t)
+	void push(T t)
+	in (!full) {
+		immutable pos = atomicLoad!(MO.acq)(_wpos);
+		_data[pos & mask] = t;
+		atomicStore!(MO.rel)(_wpos, pos + 1);
+	}
+
+	void push(ref T t)
 	in (!full) {
 		immutable pos = atomicLoad!(MO.acq)(_wpos);
 		_data[pos & mask] = t;
