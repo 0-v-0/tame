@@ -63,7 +63,7 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 	}
 
 	/// ditto
-	ref opOpAssign(string op : "~")(in void[] rhs) {
+	ref opOpAssign(string op : "~")(in void[] rhs) @trusted {
 		import core.stdc.string;
 
 		auto s = cast(void[])rhs;
@@ -82,6 +82,12 @@ struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 		pos = remain;
 		return this;
 	}
+
+	pragma(inline, true)
+	auto put(S)(S x) => opOpAssign!"~"(x);
+
+	pragma(inline, true)
+	auto put(S)(ref S x) => opOpAssign!"~"(x);
 
 	alias length = pos;
 

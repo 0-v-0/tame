@@ -28,7 +28,7 @@ struct Splitter(bool keepSeparators = false, S:
 	}
 
 	void popFront() {
-		static if(keepSeparators) {
+		static if (keepSeparators) {
 			s = s[frontLen .. $];
 		} else {
 			s = s[frontLen + (frontLen < s.length) .. $];
