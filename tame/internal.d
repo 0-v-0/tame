@@ -42,9 +42,7 @@ version (LDC) {
 	enum forceinline;
 	enum sse4;
 
-	T _expect(T)(T val, T expected) if (__traits(isIntegral, T)) {
-		return val;
-	}
+	T _expect(T)(T val, T expected) if (__traits(isIntegral, T)) => val;
 }
 
 pure nothrow @nogc:
