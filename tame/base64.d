@@ -1,19 +1,20 @@
-/*
+/**
 	This module is used to decode and encode base64 char[] arrays.
+*/
+module tame.base64;
 
-	Example:
-	---
+pure nothrow:
+
+unittest {
 	auto str = "Hello there, my name is Jeff.";
 	scope encodebuf = new char[encodedSize(cast(ubyte[])str)];
 	char[] encoded = encode(cast(ubyte[])str, encodebuf);
 
 	scope decodebuf = new ubyte[encoded.length];
-	assert(cast(char[])decode(encoded, decodebuf) == "Hello there, my name is Jeff.");
-	---
-*/
-module tame.base64;
+	assert(decode(encoded, decodebuf) == "Hello there, my name is Jeff.");
+}
 
-pure nothrow @nogc:
+@nogc:
 
 /*
 	calculates and returns the size needed to encode the length of the
@@ -48,7 +49,7 @@ size_t encodedSize(size_t length) @safe
 	bytesEncoded = ref that returns how much of the buffer was filled
 */
 
-size_t encodeChunk(const(ubyte[]) data, char[] buff, ref size_t bytesEncoded) {
+size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) {
 	size_t tripletCount = data.length / 3;
 	size_t rtn;
 	char* rtnPtr = buff.ptr;
@@ -83,37 +84,30 @@ size_t encodeChunk(const(ubyte[]) data, char[] buff, ref size_t bytesEncoded) {
 	---
 */
 
-char[] encode(const(ubyte[]) data, char[] buff)
-in (data)
+char[] encode(const ubyte[] data, char[] buff)
 in (buff.length >= encodedSize(data)) {
-	char[] rtn;
+	size_t bytesEncoded;
+	size_t numBytes = encodeChunk(data, buff, bytesEncoded);
+	char* rtnPtr = buff.ptr + bytesEncoded;
+	const(ubyte)* dataPtr = data.ptr + numBytes;
+	size_t tripletFraction = data.length - numBytes;
 
-	if (data.length) {
-		size_t bytesEncoded;
-		size_t numBytes = encodeChunk(data, buff, bytesEncoded);
-		char* rtnPtr = buff.ptr + bytesEncoded;
-		const(ubyte)* dataPtr = data.ptr + numBytes;
-		size_t tripletFraction = data.length - (dataPtr - data.ptr);
-
-		switch (tripletFraction) {
-		case 2:
-			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
-			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4 | (dataPtr[1] & 0xF0) >> 4];
-			*rtnPtr++ = _encodeTable[(dataPtr[1] & 0x0F) << 2];
-			*rtnPtr++ = '=';
-			break;
-		case 1:
-			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
-			*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4];
-			*rtnPtr++ = '=';
-			*rtnPtr++ = '=';
-			break;
-		default:
-		}
-		rtn = buff[0 .. (rtnPtr - buff.ptr)];
+	switch (tripletFraction) {
+	case 2:
+		*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
+		*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4 | (dataPtr[1] & 0xF0) >> 4];
+		*rtnPtr++ = _encodeTable[(dataPtr[1] & 0x0F) << 2];
+		*rtnPtr++ = '=';
+		break;
+	case 1:
+		*rtnPtr++ = _encodeTable[(dataPtr[0] & 0xFC) >> 2];
+		*rtnPtr++ = _encodeTable[(dataPtr[0] & 0x03) << 4];
+		*rtnPtr++ = '=';
+		*rtnPtr++ = '=';
+		break;
+	default:
 	}
-
-	return rtn;
+	return buff[0 .. (rtnPtr - buff.ptr)];
 }
 
 /*
@@ -138,10 +132,7 @@ in (buff.length >= encodedSize(data)) {
 	---
 */
 
-ubyte[] decode(const(char[]) data, ubyte[] buff)
-in (data) {
-	ubyte[] rtn;
-
+ubyte[] decode(const char[] data, ubyte[] buff) {
 	if (data.length) {
 		ubyte[4] base64Quad;
 		ubyte* quadPtr = base64Quad.ptr;
@@ -152,7 +143,7 @@ in (data) {
 		ubyte padCount;
 		ubyte endCount;
 		ubyte paddedPos;
-		foreach_reverse (char piece; data) {
+		foreach_reverse (piece; data) {
 			paddedPos++;
 			ubyte current = _decodeTable[piece];
 			if (current || piece == 'A') {
@@ -165,7 +156,7 @@ in (data) {
 		}
 
 		if (padCount > 2)
-			return rtn; // Improperly terminated base64 string.
+			return []; // Improperly terminated base64 string.
 		if (padCount == 0)
 			paddedPos = 0;
 
@@ -205,10 +196,10 @@ in (data) {
 			}
 		}
 
-		rtn = buff[0 .. encodedLength];
+		return buff[0 .. encodedLength];
 	}
 
-	return rtn;
+	return [];
 }
 
 private:
@@ -218,7 +209,7 @@ immutable _encodeTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01
 
 // dfmt off
 
-immutable ubyte[] _decodeTable = [
+immutable ubyte[256] _decodeTable = [
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,62,0,0,0,63,52,53,54,55,56,57,58,
@@ -227,11 +218,4 @@ immutable ubyte[] _decodeTable = [
 	19,20,21,22,23,24,25,0,0,0,0,0,0,26,27,
 	28,29,30,31,32,33,34,35,36,37,38,39,40,
 	41,42,43,44,45,46,47,48,49,50,51,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0
 ];
