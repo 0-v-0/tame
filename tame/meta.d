@@ -5,7 +5,7 @@ import std.meta : AliasSeq;
 
 struct Import(string Module) {
 	template opDispatch(string name) {
-		mixin("import opDispatch = " ~ Module ~ "." ~ name ~ ";");
+		mixin("import opDispatch = ", Module, ".", name, ";");
 	}
 }
 
@@ -40,7 +40,40 @@ template getUDA(alias sym, T) {
 		alias getUDA = T.init;
 }
 
-alias CutOut(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
+alias getAttrs(alias symbol, string member) =
+	__traits(getAttributes, __traits(getMember, symbol, member));
+
+template getSymbolsWith(alias attr, symbols...) {
+	import std.meta;
+
+	template hasAttr(alias symbol, string name) {
+		static if (is(typeof(getAttrs!(symbol, name))))
+			static foreach (a; getAttrs!(symbol, name)) {
+				static if (is(typeof(hasAttr) == void)) {
+					static if (__traits(isSame, a, attr))
+						enum hasAttr = true;
+					else static if (__traits(isTemplate, attr)) {
+						static if (is(typeof(a) == attr!A, A...))
+							enum hasAttr = true;
+					} else {
+						static if (is(typeof(a) == attr))
+							enum hasAttr = true;
+					}
+				}
+			}
+		static if (is(typeof(hasAttr) == void))
+			enum hasAttr = false;
+	}
+
+	alias getSymbolsWith = AliasSeq!();
+	static foreach (symbol; symbols) {
+		static foreach (name; __traits(derivedMembers, symbol))
+			static if (hasAttr!(symbol, name))
+				getSymbolsWith = AliasSeq!(getSymbolsWith, __traits(getMember, symbol, name));
+	}
+}
+
+alias Omit(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
 
 /**
  * Generates a mixin string for repeating code. It can be used to unroll variadic arguments.
