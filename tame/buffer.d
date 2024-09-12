@@ -144,8 +144,7 @@ pure nothrow @safe:
 auto tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
 	void* buffer = (T.sizeof * length <= maxAlloca) ? alloca(T.sizeof * length) : null)
 	=> TempBuffer!T(cast(T*)(
-			buffer ? buffer
-			: malloc(T.sizeof * length))[0 .. length],
+			buffer ? buffer : malloc(T.sizeof * length))[0 .. length],
 		buffer is null);
 
 /*
@@ -295,8 +294,8 @@ public:
 		T* target = cast(T*)(cast(size_t)last.ptr / T.alignof * T.alignof);
 		if (target > buf.ptr && cast(size_t)(target - cast(T*)buf.ptr) >= n)
 			return SBE(target - n, last);
-		else // TODO: Respect alignment here as well by padding. Optionally also embed a length in the heap block, so we can provide slicing of the whole thing.
-			return SBE(n <= size_t.max / T.sizeof ? cast(T*)malloc(T.sizeof * n) : null);
+		// TODO: Respect alignment here as well by padding. Optionally also embed a length in the heap block, so we can provide slicing of the whole thing.
+		return SBE(n <= size_t.max / T.sizeof ? cast(T*)malloc(T.sizeof * n) : null);
 	}
 }
 
