@@ -93,11 +93,18 @@ ptrdiff_t indexOf(in char[] s, char c) @trusted {
 	return p ? p - cast(void*)s.ptr : -1;
 }
 
+ptrdiff_t indexOf(in char[] s, char c, size_t start) @trusted {
+	const p = memchr(s.ptr + start, c, s.length - start);
+	return p ? p - cast(void*)s.ptr : -1;
+}
+
 unittest {
 	assert(indexOf("hello", 'h') == 0);
 	assert(indexOf("hello", 'e') == 1);
 	assert(indexOf("hello", 'o') == 4);
 	assert(indexOf("hello", 'z') == -1);
+	assert(indexOf("hello", 'h', 1) == -1);
+	assert(indexOf("hello", 'e', 1) == 1);
 }
 
 S stripLeft(S)(S input) {

@@ -34,7 +34,7 @@ unittest {
 
 template getUDA(alias sym, T) {
 	static foreach (uda; __traits(getAttributes, sym))
-		static if (is(typeof(uda) == T))
+		static if (is(typeof(getUDA) == void) && is(typeof(uda) == T))
 			alias getUDA = uda;
 	static if (is(typeof(getUDA) == void))
 		alias getUDA = T.init;
