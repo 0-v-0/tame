@@ -44,8 +44,6 @@ alias getAttrs(alias symbol, string member) =
 	__traits(getAttributes, __traits(getMember, symbol, member));
 
 template getSymbolsWith(alias attr, symbols...) {
-	import std.meta;
-
 	template hasAttr(alias symbol, string name) {
 		static if (is(typeof(getAttrs!(symbol, name))))
 			static foreach (a; getAttrs!(symbol, name)) {
