@@ -199,22 +199,30 @@ unittest {
 	assert(strip(" foo", 'f') == " foo");
 }
 
+bool startsWith(in char[] input, char ch)
+	=> input.length && input[0] == ch;
+
 bool startsWith(in char[] input, in char[] prefix)
 	=> prefix.length <= input.length &&
 	compare(input[0 .. prefix.length], prefix) == 0;
 
 unittest {
+	assert(startsWith("hello", 'h'));
 	assert(startsWith("hello", "he"));
 	assert(!startsWith("hello", "hi"));
 	assert(!startsWith("hello", "hello world"));
 	assert(startsWith("hello", ""));
 }
 
+bool endsWith(in char[] input, char ch)
+	=> input.length && input[$ - 1] == ch;
+
 bool endsWith(in char[] input, in char[] suffix)
 	=> suffix.length <= input.length &&
 	compare(input[input.length - suffix.length .. $], suffix) == 0;
 
 unittest {
+	assert(endsWith("hello", 'o'));
 	assert(endsWith("hello", "lo"));
 	assert(!endsWith("hello", "hi"));
 	assert(!endsWith("hello", "hello world"));
