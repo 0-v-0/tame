@@ -71,7 +71,7 @@ unittest {
 }
 
 version (unittest) {
-	import core.thread, std.concurrency;
+	import core.thread;
 
 	enum amount = 500_000;
 

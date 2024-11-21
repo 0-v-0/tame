@@ -1,6 +1,6 @@
 module lockfree.dlist;
 
-import std.algorithm, std.concurrency, std.conv, std.stdio;
+import std.algorithm, std.conv, std.stdio;
 import core.atomic, core.thread;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -585,7 +585,7 @@ void iterator(Position Where)() {
 }
 
 unittest {
-	import std.parallelism : totalCPUs;
+	import std.concurrency, std.parallelism : totalCPUs;
 
 	sList = new shared TList();
 	size_t count = void;
