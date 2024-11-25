@@ -31,7 +31,7 @@ debug {
 	unittest {
 		void funcThatDoesGC() {
 			int a = 4;
-			int[] _ = [a, a, a];
+			int[] _ = [a, a];
 		}
 
 		void anotherFunction() nothrow @nogc {

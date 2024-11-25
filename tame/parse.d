@@ -80,7 +80,7 @@ Date parseDate(S)(S input) {
 }
 
 import std.traits;
-import tame.internal;
+import tame.builtins;
 
 @nogc nothrow:
 
@@ -135,6 +135,8 @@ nothrow unittest {
 	assert(!hexDecode4(p, result));
 	assert(result == 0xAF09);
 }
+
+package:
 
 /+
 	String Scanning and Comparison

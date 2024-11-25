@@ -1,4 +1,4 @@
-module lockfree.rwqueue;
+module tame.lockfree.rwqueue;
 
 import core.atomic;
 import core.bitop : bsr;

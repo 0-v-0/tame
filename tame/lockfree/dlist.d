@@ -1,12 +1,9 @@
-module lockfree.dlist;
+module tame.lockfree.dlist;
 
-import std.algorithm, std.conv, std.stdio;
+import std.algorithm;
 import core.atomic, core.thread;
 
-////////////////////////////////////////////////////////////////////////////////
-// lock-free implementation
-////////////////////////////////////////////////////////////////////////////////
-
+/// lock-free implementation
 shared class AtomicDList(T) {
 	shared struct Node {
 		private Node* _prev, _next;
@@ -285,10 +282,7 @@ private:
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// synchronized implementation
-////////////////////////////////////////////////////////////////////////////////
-
+/// synchronized implementation
 synchronized class SyncedDList(T) {
 	struct Node {
 		private Node* _prev, _next;
@@ -308,25 +302,6 @@ synchronized class SyncedDList(T) {
 
 	private Node _head, _tail;
 	enum bottom = clearlsb(cast(Node*)0xdeadbeafdeadbeaf);
-
-	string dump() const {
-		auto res = "";
-		Node* pNode = cast(Node*)&_head;
-		do {
-			res ~= to!string(pNode) ~ "->";
-			pNode = pNode._next;
-		}
-		while (pNode != cast(Node*)&_tail);
-		res ~= to!string(pNode) ~ "\n";
-		auto rev = "";
-		do {
-			rev = "<-" ~ to!string(pNode) ~ rev;
-			pNode = pNode._prev;
-		}
-		while (pNode != cast(Node*)&_head);
-		rev = to!string(pNode) ~ rev;
-		return res ~ rev;
-	}
 
 	this() {
 		_head._prev = bottom;
@@ -348,7 +323,7 @@ synchronized class SyncedDList(T) {
 	}
 
 	void pushBack(shared T value) {
-		auto newNode = new shared(Node)(value);
+		auto newNode = new shared Node(value);
 		newNode._next = &_tail;
 		newNode._prev = _tail._prev;
 		_tail._prev = newNode;
@@ -436,13 +411,12 @@ T* setlsb(T)(T* p) => cast(T*)(cast(size_t)p | 1);
 
 T* clearlsb(T)(T* p) => cast(T*)(cast(size_t)p & ~1);
 
-////////////////////////////////////////////////////////////////////////////////
 // Unit Tests
-////////////////////////////////////////////////////////////////////////////////
 
 // dfmt off
 version (unittest):
 // dfmt on
+import std.stdio;
 
 unittest {
 	auto testList = new shared TList();
@@ -586,6 +560,7 @@ void iterator(Position Where)() {
 
 unittest {
 	import std.concurrency, std.parallelism : totalCPUs;
+	import std.conv : to;
 
 	sList = new shared TList();
 	size_t count = void;
@@ -658,7 +633,6 @@ unittest {
 
 	for (p = sList._head.next; p !is &sList._tail; p = p.next) {
 		++count;
-
 	}
 	writeln("mixed empty? -> ", count);
 	assert(count == 0, count.to!string);

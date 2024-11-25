@@ -1,4 +1,4 @@
-module tame.mlmap;
+module tame.container.mlmap;
 
 private enum isSomeString(T) = is(immutable T == immutable C[], C) &&
 	(is(C == char) || is(C == wchar) || is(C == dchar));

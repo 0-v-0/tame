@@ -26,7 +26,7 @@ module tame.format;
 import std.meta,
 std.range,
 tame.buffer,
-tame.internal,
+tame.builtins,
 tame.misc;
 import std.algorithm : among, canFind, max, min;
 import std.datetime.date : TimeOfDay;
@@ -118,7 +118,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 				auto val = args[j];
 			foreach (ref e; val) {
 				static if (tok.del.length) {
-					if (_expect(!first, true))
+					if (likely(!first, true))
 						write(tok.del);
 					else
 						first = false;
@@ -147,7 +147,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 					write(val ? "true" : "false");
 				else static if (is(U == enum)) {
 					auto tmp = enumToStr(val);
-					if (_expect(tmp is null, false))
+					if (unlikely(tmp is null))
 						advance(s.nogcFormatTo!"%s(%d)"(U.stringof, val));
 					else
 						write(tmp);
@@ -959,8 +959,8 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 		static if (isSigned!T) {
 			import std.ascii : isWhite;
 
-			if (_expect(val < 0, false)) {
-				if (_expect(val == long.min, false)) {
+			if (unlikely(val < 0)) {
+				if (unlikely(val == long.min)) {
 					// special case for unconvertable value
 					write("-9223372036854775808");
 					return 20;

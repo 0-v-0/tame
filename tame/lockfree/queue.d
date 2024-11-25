@@ -1,4 +1,4 @@
-module lockfree.queue;
+module tame.lockfree.queue;
 
 // From https://github.com/jnschulze/LockFreeQueue.d/blob/master/collection/LockFreeQueue.d
 import core.atomic : MemoryOrder, CAS = cas;
@@ -11,6 +11,8 @@ shared struct LockFreeQueue(T) {
 	}
 
 	@disable this();
+
+	@property bool empty() const => head == tail;
 
 	void enqueue(T payload) {
 		auto node = new Node(payload, null);

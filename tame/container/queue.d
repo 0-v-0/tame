@@ -1,7 +1,7 @@
-module tame.queue;
+module tame.container.queue;
 import std.traits : hasMember, hasIndirections;
 
-/*
+/**
  * Simple queue implemented as a singly linked list with a tail pointer.
  *
  * Allocations are non-GC and are damped by a free-list based on the nodes

@@ -5,13 +5,13 @@ copyright "Copyright © 2022, 0-v-0"
 license "MIT"
 sourcePaths "tame"
 importPaths "."
-dflags "-dip1008"
+dflags "-dip1008" "-preview=in"
 configuration "lib" {
 	targetType "library"
+	excludedSourceFiles "tame/lockfree/*.d"
 }
 subPackage {
 	name "lockfree"
-	sourcePaths "lockfree"
+	sourcePaths "tame/lockfree"
 	importPaths "."
-	dflags "-preview=in"
 }
