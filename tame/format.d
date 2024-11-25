@@ -118,10 +118,10 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 				auto val = args[j];
 			foreach (ref e; val) {
 				static if (tok.del.length) {
-					if (likely(!first, true))
-						write(tok.del);
-					else
+					if (unlikely(first))
 						first = false;
+					else
+						write(tok.del);
 				}
 				advance(s.nogcFormatTo!(tok.fmt)(e));
 			}

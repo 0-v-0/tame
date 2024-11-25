@@ -32,7 +32,7 @@ shared class AtomicDList(T) {
 	bool empty() => _head._next == &_tail;
 
 	void pushFront(shared T value) {
-		auto newNode = new shared(Node)(value);
+		auto newNode = new shared Node(value);
 		auto prev = &_head;
 		typeof(prev) next;
 		do {
@@ -168,7 +168,7 @@ shared class AtomicDList(T) {
 
 		if (cursor == &_head)
 			return insertAfter(cursor, value);
-		auto node = new shared(Node)(value);
+		auto node = new shared Node(value);
 		shared(Node)* next;
 		auto prev = clearlsb(cursor._prev);
 
@@ -195,7 +195,7 @@ shared class AtomicDList(T) {
 	in (!haslsb(cursor)) {
 		if (cursor == &_tail)
 			return insertBefore(cursor, value);
-		auto node = new shared(Node)(value);
+		auto node = new shared Node(value);
 		auto prev = cursor;
 		shared(Node)* next;
 
@@ -315,7 +315,7 @@ synchronized class SyncedDList(T) {
 	bool empty() => _head._next == &_tail;
 
 	void pushFront(shared T value) {
-		auto newNode = new shared(Node)(value);
+		auto newNode = new shared Node(value);
 		newNode._next = _head._next;
 		newNode._prev = &_head;
 		_head._next = newNode;

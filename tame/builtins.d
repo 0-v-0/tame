@@ -53,7 +53,9 @@ else
 	}
 }
 
-/// Provide static branch hints
-pragma(inline, true) bool likely(bool b) => expect(b, true);
-///
-pragma(inline, true) bool unlikely(bool b) => expect(b, false);
+pragma(inline, true) @safe nothrow @nogc pure {
+	/// Provide static branch hints
+	bool likely(bool b) => expect(b, true);
+	///
+	bool unlikely(bool b) => expect(b, false);
+}
