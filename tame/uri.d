@@ -4,12 +4,12 @@ import std.ascii;
 import std.range;
 
 /++
-	Generates an identifier suitable to use as within a URL.
+Generates an identifier suitable to use as within a URL.
 
-	The resulting string will contain only ASCII lower case alphabetic or
-	numeric characters, as well as dashes (-). Every sequence of
-	non-alphanumeric characters will be replaced by a single dash. No dashes
-	will be at either the front or the back of the result string.
+The resulting string will contain only ASCII lower case alphabetic or
+numeric characters, as well as dashes (-). Every sequence of
+non-alphanumeric characters will be replaced by a single dash. No dashes
+will be at either the front or the back of the result string.
 +/
 struct SlugRange(R) if (isInputRange!R && is(typeof(R.init.front) == dchar)) {
 	this(R input) {
@@ -104,13 +104,11 @@ void extractParams(S, M)(ref S url, ref M params) {
 	}
 }
 
-S makeQueryParams(M)(M params, char delimiter = '&') {
-	auto res = appender!S;
+void putQueryParams(R, M)(R res, M params, char delimiter = '&') {
 	foreach (key, value; params) {
 		res ~= key;
 		res ~= '=';
 		res ~= value;
 		res ~= delimiter;
 	}
-	return res[];
 }

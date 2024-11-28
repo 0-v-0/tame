@@ -1,7 +1,9 @@
+// Modified from https://github.com/MartinNowak/lock-free/blob/master/src/lock_free/dlist.d
 module tame.lockfree.dlist;
 
+import core.atomic;
 import std.algorithm;
-import core.atomic, core.thread;
+import tame.unsafe.ptrop;
 
 /// lock-free implementation
 shared class AtomicDList(T) {
@@ -13,13 +15,13 @@ shared class AtomicDList(T) {
 			_payload = payload;
 		}
 
-		@property shared(Node)* prev() => clearlsb(_prev);
+		@property shared(Node)* prev() => clearLSB(_prev);
 
-		@property shared(Node)* next() => clearlsb(_next);
+		@property shared(Node)* next() => clearLSB(_next);
 	}
 
 	private Node _head, _tail;
-	enum bottom = clearlsb(cast(shared(Node)*)0xdeadbeafdeadbeaf);
+	enum bottom = clearLSB(cast(shared(Node)*)0xdeadbeafdeadbeaf);
 	//  enum bottom = null;
 
 	this() {
@@ -54,7 +56,7 @@ shared class AtomicDList(T) {
 			if (cas(&prev._next, next, newNode))
 				break;
 			if (correctPrev(prev, next))
-				prev = clearlsb(next._prev);
+				prev = clearLSB(next._prev);
 		}
 		linkPrev(newNode, next);
 	}
@@ -67,13 +69,13 @@ shared class AtomicDList(T) {
 				return null;
 
 			auto next = node._next;
-			if (haslsb(next)) {
+			if (hasLSB(next)) {
 				setMark(&node._prev);
-				cas(&prev._next, node, clearlsb(next));
+				cas(&prev._next, node, clearLSB(next));
 				continue;
 			}
 
-			if (cas(&node._next, next, setlsb(next))) {
+			if (cas(&node._next, next, setLSB(next))) {
 				correctPrev(prev, next);
 				return &node._payload;
 			}
@@ -86,29 +88,29 @@ shared class AtomicDList(T) {
 		while (true) {
 			if (node._next != next) {
 				if (correctPrev(node, next))
-					node = clearlsb(next._prev);
+					node = clearLSB(next._prev);
 				continue;
 			}
 			if (node == &_head)
 				return null;
 
-			if (cas(&node._next, next, setlsb(next))) {
-				correctPrev(clearlsb(node._prev), next);
+			if (cas(&node._next, next, setLSB(next))) {
+				correctPrev(clearLSB(node._prev), next);
 				return &node._payload;
 			}
 		}
 	}
 
 	bool next(ref shared(Node)* cursor)
-	in (!haslsb(cursor)) {
+	in (!hasLSB(cursor)) {
 		while (true) {
 			if (cursor == &_tail)
 				return false;
-			auto next = clearlsb(cursor._next);
-			auto d = haslsb(next._next);
-			if (d && cursor._next != setlsb(next)) {
+			auto next = clearLSB(cursor._next);
+			auto d = hasLSB(next._next);
+			if (d && cursor._next != setLSB(next)) {
 				setMark(&next._prev);
-				cas(&cursor._next, next, clearlsb(next._next));
+				cas(&cursor._next, next, clearLSB(next._next));
 				continue;
 			}
 			cursor = next;
@@ -119,17 +121,17 @@ shared class AtomicDList(T) {
 	}
 
 	bool prev(ref shared(Node)* cursor)
-	in (!haslsb(cursor)) {
+	in (!hasLSB(cursor)) {
 		while (true) {
 			if (cursor == &_head)
 				return false;
 
-			auto prev = clearlsb(cursor._prev);
-			if (prev._next == cursor && !haslsb(cursor._next)) {
+			auto prev = clearLSB(cursor._prev);
+			if (prev._next == cursor && !hasLSB(cursor._next)) {
 				cursor = prev;
 				if (prev != &_head)
 					return true;
-			} else if (haslsb(cursor._next)) {
+			} else if (hasLSB(cursor._next)) {
 				next(cursor);
 			} else {
 				correctPrev(prev, cursor);
@@ -137,62 +139,62 @@ shared class AtomicDList(T) {
 		}
 	}
 
-	shared(T)* deleteNode(ref shared(Node)* cursor)
-	in (!haslsb(cursor)) {
+	shared(T)* remove(ref shared(Node)* cursor)
+	in (!hasLSB(cursor)) {
 		auto node = cursor;
 		if (node == &_head || node == &_tail)
 			return null;
 
 		while (true) {
 			auto next = cursor._next;
-			if (haslsb(next))
+			if (hasLSB(next))
 				return null;
-			if (cas(&node._next, next, setlsb(next))) {
+			if (cas(&node._next, next, setLSB(next))) {
 				shared(Node)* prev;
 				while (true) {
 					prev = node._prev;
-					if (haslsb(prev) || cas(&node._prev, prev, setlsb(prev)))
+					if (hasLSB(prev) || cas(&node._prev, prev, setLSB(prev)))
 						break;
 				}
 
-				assert(!haslsb(next));
-				correctPrev(clearlsb(prev), next);
+				assert(!hasLSB(next));
+				correctPrev(clearLSB(prev), next);
 				return &node._payload;
 			}
 		}
 	}
 
 	void insertBefore(ref shared(Node)* in_cursor, shared T value)
-	in (!haslsb(in_cursor)) {
+	in (!hasLSB(in_cursor)) {
 		auto cursor = in_cursor;
 
 		if (cursor == &_head)
 			return insertAfter(cursor, value);
 		auto node = new shared Node(value);
 		shared(Node)* next;
-		auto prev = clearlsb(cursor._prev);
+		auto prev = clearLSB(cursor._prev);
 
 		while (true) {
-			while (haslsb(cursor._next)) {
+			while (hasLSB(cursor._next)) {
 				this.next(cursor);
 				if (correctPrev(prev, cursor))
-					prev = clearlsb(cursor._prev);
+					prev = clearLSB(cursor._prev);
 			}
-			assert(!haslsb(cursor));
+			assert(!hasLSB(cursor));
 			next = cursor;
 			node._prev = prev;
 			node._next = next;
 			if (cas(&prev._next, next, node))
 				break;
 			if (correctPrev(prev, cursor))
-				prev = clearlsb(cursor._prev);
+				prev = clearLSB(cursor._prev);
 		}
 		cursor = cast(shared)node;
 		correctPrev(prev, next);
 	}
 
 	void insertAfter(ref shared(Node)* cursor, shared T value)
-	in (!haslsb(cursor)) {
+	in (!hasLSB(cursor)) {
 		if (cursor == &_tail)
 			return insertBefore(cursor, value);
 		auto node = new shared Node(value);
@@ -200,13 +202,13 @@ shared class AtomicDList(T) {
 		shared(Node)* next;
 
 		while (true) {
-			next = clearlsb(prev._next);
+			next = clearLSB(prev._next);
 			node._next = next;
 			node._prev = prev;
 			if (cas(&cursor._next, next, node))
 				break;
 
-			if (haslsb(prev._next)) {
+			if (hasLSB(prev._next)) {
 				// delete node
 				return insertBefore(cursor, value);
 			}
@@ -221,18 +223,18 @@ private:
 		shared(Node)* link1;
 		do {
 			link1 = next._prev;
-			if (haslsb(link1) || node._next != next)
+			if (hasLSB(link1) || node._next != next)
 				return;
 		}
-		while (!cas(&next._prev, link1, clearlsb(node)));
+		while (!cas(&next._prev, link1, clearLSB(node)));
 
-		if (haslsb(node._prev))
+		if (hasLSB(node._prev))
 			correctPrev(node, next);
 	}
 
 	bool correctPrev(shared(Node)* prev, shared(Node)* node) {
-		assert(!haslsb(prev));
-		assert(!haslsb(node));
+		assert(!hasLSB(prev));
+		assert(!hasLSB(node));
 		assert(prev != bottom);
 		assert(node != bottom);
 
@@ -240,18 +242,18 @@ private:
 		while (true) {
 			//! store link1 for later cas
 			auto link1 = node._prev;
-			if (haslsb(node._next))
+			if (hasLSB(node._next))
 				return false;
 			auto prev2 = prev._next;
 
-			if (haslsb(prev2)) {
+			if (hasLSB(prev2)) {
 				if (lastlink == bottom) {
-					prev = clearlsb(prev._prev);
+					prev = clearLSB(prev._prev);
 					//          prev = prev._prev;
 				} else {
 					setMark(&prev._prev);
-					//          assert(!haslsb(lastlink._next));
-					cas(&lastlink._next, prev, clearlsb(prev2));
+					//          assert(!hasLSB(lastlink._next));
+					cas(&lastlink._next, prev, clearLSB(prev2));
 					prev = lastlink;
 					lastlink = bottom;
 				}
@@ -264,10 +266,9 @@ private:
 				continue;
 			}
 
-			if (cas(&node._prev, link1, clearlsb(prev))) {
-				if (haslsb(prev._prev))
-					continue;
-				break;
+			if (cas(&node._prev, link1, clearLSB(prev))) {
+				if (!hasLSB(prev._prev))
+					break;
 			}
 		}
 		return true;
@@ -278,7 +279,7 @@ private:
 		do {
 			p = *link;
 		}
-		while (!haslsb(p) && !cas(link, p, setlsb(p)));
+		while (!hasLSB(p) && !cas(link, p, setLSB(p)));
 	}
 }
 
@@ -301,7 +302,7 @@ synchronized class SyncedDList(T) {
 	}
 
 	private Node _head, _tail;
-	enum bottom = clearlsb(cast(Node*)0xdeadbeafdeadbeaf);
+	enum bottom = clearLSB(cast(Node*)0xdeadbeafdeadbeaf);
 
 	this() {
 		_head._prev = bottom;
@@ -366,7 +367,7 @@ synchronized class SyncedDList(T) {
 		return true;
 	}
 
-	shared(T)* deleteNode(ref shared(Node)* cursor) {
+	shared(T)* remove(ref shared(Node)* cursor) {
 		if (cursor == &_head || cursor == &_tail)
 			return null;
 
@@ -399,23 +400,14 @@ synchronized class SyncedDList(T) {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// lsb helper
-////////////////////////////////////////////////////////////////////////////////
-
 private:
-
-bool haslsb(T)(T* p) => (cast(size_t)p & 1) != 0;
-
-T* setlsb(T)(T* p) => cast(T*)(cast(size_t)p | 1);
-
-T* clearlsb(T)(T* p) => cast(T*)(cast(size_t)p & ~1);
 
 // Unit Tests
 
 // dfmt off
 version (unittest):
 // dfmt on
+import core.thread;
 import std.stdio;
 
 unittest {
@@ -423,8 +415,8 @@ unittest {
 	testList.pushFront(shared TPayload(0));
 	auto cursor = &testList._head;
 	testList.next(cursor);
-	cursor._next = setlsb(cursor._next);
-	cursor._prev = setlsb(cursor._prev);
+	cursor._next = setLSB(cursor._next);
+	cursor._prev = setLSB(cursor._prev);
 	testList.insertBefore(cursor, shared TPayload(1));
 }
 
@@ -520,7 +512,7 @@ void iterRemover(Position Where)() {
 			auto cursor = &sList._head;
 			do
 				sList.next(cursor);
-			while (sList.deleteNode(cursor) !is null && --count);
+			while (sList.remove(cursor) !is null && --count);
 		}
 		while (count);
 	} else {
@@ -528,7 +520,7 @@ void iterRemover(Position Where)() {
 			auto cursor = &sList._tail;
 			do
 				sList.prev(cursor);
-			while (sList.deleteNode(cursor) !is null && --count);
+			while (sList.remove(cursor) !is null && --count);
 		}
 		while (count);
 	}
@@ -560,7 +552,6 @@ void iterator(Position Where)() {
 
 unittest {
 	import std.concurrency, std.parallelism : totalCPUs;
-	import std.conv : to;
 
 	sList = new shared TList();
 	size_t count = void;
@@ -586,7 +577,7 @@ unittest {
 		p = p.next;
 	}
 	writeln("queue empty? -> ", count);
-	assert(count == 0, count.to!string);
+	assert(count == 0);
 
 	foreach (i; 0 .. totalCPUs) {
 		if (i & 1) {
@@ -608,7 +599,7 @@ unittest {
 		p = p.next;
 	}
 	writeln("list empty? -> ", count);
-	assert(count == 0, count.to!string);
+	assert(count == 0);
 
 	foreach (i; 0 .. totalCPUs) {
 		if (i & 1) {
@@ -635,5 +626,5 @@ unittest {
 		++count;
 	}
 	writeln("mixed empty? -> ", count);
-	assert(count == 0, count.to!string);
+	assert(count == 0);
 }

@@ -2,8 +2,8 @@ module tame.fixed.map;
 
 @safe pure nothrow @nogc:
 
-struct Map(K, V, size_t N = 16) {
-	static assert(!((N - 1) & N), "N must be a power of 2");
+struct Map(K, V, size_t N = 16, alias hasher = hashOf) {
+	static assert(!((N - 1) & N), "N must be 0 or a power of 2");
 pure:
 	struct Bucket {
 	private:
@@ -25,7 +25,7 @@ pure:
 
 		size_t calcHash(in K pkey) {
 			// highest bit is set to distinguish empty/deleted from filled buckets
-			const hash = hashOf(pkey);
+			const hash = hasher(pkey);
 			return mix(hash) | Hash.filled;
 		}
 
@@ -146,6 +146,11 @@ unittest {
 	assert(m.length == 4);
 	assert(m.remove(5));
 	assert(m.length == 3);
+}
+
+unittest {
+	Map!(int, int, 0) m;
+	assert(m.empty);
 }
 
 private:

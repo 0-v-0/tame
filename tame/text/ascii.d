@@ -1,4 +1,4 @@
-module tame.ascii;
+module tame.text.ascii;
 
 version (Windows)
 	import core.stdc.string : memicmp;
@@ -9,8 +9,11 @@ package:
 	static assert(0, "Unsupported platform");
 
 import core.stdc.string : memcmp, memcpy;
-import std.traits,
-std.ascii : isWhite;
+import std.ascii : isWhite;
+
+version (LDC) {
+	pragma(LDC_no_moduleinfo);
+}
 
 nothrow @nogc:
 
@@ -40,7 +43,7 @@ T[] toUpper(T)(T[] src) {
 	Compare two char[] ignoring case. Returns 0 if equal
 +/
 
-int icompare(in char[] s1, in char[] s2) @trusted {
+int icmp(in char[] s1, in char[] s2) @trusted {
 	if (s1.ptr && s2.ptr) {
 		const result = memicmp(s1.ptr, s2.ptr, s1.length > s2.length ? s2.length : s1.length);
 		if (result)
@@ -53,7 +56,7 @@ int icompare(in char[] s1, in char[] s2) @trusted {
 	Compare two char[] with case. Returns 0 if equal
 +/
 
-auto compare(in char[] s1, in char[] s2) @trusted {
+auto cmp(in char[] s1, in char[] s2) @trusted {
 	if (s1.ptr && s2.ptr) {
 		const result = memcmp(s1.ptr, s2.ptr, s1.length > s2.length ? s2.length : s1.length);
 		if (result)
@@ -133,13 +136,13 @@ unittest {
 	strcpy(p, "1BAC".ptr);
 	assert(toUpper(tmp) == "1BAC");
 
-	assert(icompare(null, null) == 0);
-	assert(icompare(null, "a") < 0);
-	assert(icompare("ABC", "abc") == 0);
-	assert(icompare("abc", "abc") == 0);
-	assert(icompare("abcd", "abc") > 0);
-	assert(icompare("abc", "abcd") < 0);
-	assert(icompare("ACC", "abc") > 0);
+	assert(icmp(null, null) == 0);
+	assert(icmp(null, "a") < 0);
+	assert(icmp("ABC", "abc") == 0);
+	assert(icmp("abc", "abc") == 0);
+	assert(icmp("abcd", "abc") > 0);
+	assert(icmp("abc", "abcd") < 0);
+	assert(icmp("ACC", "abc") > 0);
 
 	assert(isearch(null, null) == 0);
 	assert(isearch(null, "a") == 0);
@@ -211,7 +214,7 @@ unittest {
 }
 
 /// Returns: true if the string starts with a white character
-bool startsWithWhite(S)(S s) if (isArray!S)
+bool startsWithWhite(S)(S s) if (is(typeof(s[0]) : dchar) && is(typeof(s.length) : size_t))
 	=> s.length && s[0].isWhite;
 
 ///

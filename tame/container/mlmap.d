@@ -1,9 +1,13 @@
 module tame.container.mlmap;
 
+version (LDC) {
+	pragma(LDC_no_moduleinfo);
+}
+
 private enum isSomeString(T) = is(immutable T == immutable C[], C) &&
 	(is(C == char) || is(C == wchar) || is(C == dchar));
 
-struct Node(K = string, V = string) {
+struct Node(K, V) {
 	V[K] aa;
 	alias aa this;
 	Node!(K, V)* next;

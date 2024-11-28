@@ -1,6 +1,10 @@
 module tame.container.queue;
 import std.traits : hasMember, hasIndirections;
 
+version (LDC) {
+	pragma(LDC_no_moduleinfo);
+}
+
 /**
  * Simple queue implemented as a singly linked list with a tail pointer.
  *

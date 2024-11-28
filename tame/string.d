@@ -1,6 +1,6 @@
 module tame.string;
 
-import tame.ascii,
+import tame.text.ascii,
 std.ascii : isWhite;
 import core.stdc.string : memchr;
 
@@ -204,7 +204,7 @@ bool startsWith(in char[] input, char ch)
 
 bool startsWith(in char[] input, in char[] prefix)
 	=> prefix.length <= input.length &&
-	compare(input[0 .. prefix.length], prefix) == 0;
+	cmp(input[0 .. prefix.length], prefix) == 0;
 
 unittest {
 	assert(startsWith("hello", 'h'));
@@ -219,7 +219,7 @@ bool endsWith(in char[] input, char ch)
 
 bool endsWith(in char[] input, in char[] suffix)
 	=> suffix.length <= input.length &&
-	compare(input[input.length - suffix.length .. $], suffix) == 0;
+	cmp(input[input.length - suffix.length .. $], suffix) == 0;
 
 unittest {
 	assert(endsWith("hello", 'o'));

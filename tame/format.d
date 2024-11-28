@@ -322,7 +322,7 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 
 	// %s
 	assert(nogcFormat!"12345%s"("12345") == "1234512345");
-	assert(nogcFormat!"12345%s"(12345) == "1234512345");
+	assert(nogcFormat!"123%s"(123) == "123123");
 	enum Floop {
 		XXX,
 		YYY,

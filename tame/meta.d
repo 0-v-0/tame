@@ -118,9 +118,9 @@ auto ParameterDefaultsCount(func...)() {
 }
 
 unittest {
-	import tame.ascii;
+	import tame.bitop;
 
-	static assert(ParameterDefaultsCount!classify == 0);
+	static assert(ParameterDefaultsCount!isPowerOf2 == 0);
 }
 
 /++

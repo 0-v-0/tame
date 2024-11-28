@@ -1,7 +1,7 @@
 module tame.bitop;
 
-import core.simd,
-std.traits : Unqual;
+import core.bitop : bsr;
+import std.traits : Unqual;
 
 pure nothrow @nogc:
 
@@ -14,7 +14,7 @@ Params:
 Returns:
 	The number of leading zero bits before the first one bit. If `u` is `0`,
 	the result is undefined.
- */
+*/
 version (LDC) {
 	pragma(inline, true)
 	U clz(U)(U u) if (is(Unqual!U : size_t)) {
@@ -34,8 +34,6 @@ version (LDC) {
 	} else
 		alias clz = __builtin_clzl;
 } else {
-	import core.bitop : bsr, bsf;
-
 	pragma(inline, true)
 	U clz(U)(U u) if (is(Unqual!U : size_t)) {
 		enum U max = 8 * U.sizeof - 1;
@@ -58,11 +56,16 @@ version (LDC) {
 }
 
 /**
- * Aligns a pointer to the closest multiple of $(D pot) (a power of two),
- * which is equal to or larger than $(D value).
- */
-T* alignTo(T)(return scope T* ptr, size_t pot)
-in (pot > 0 && pot.isPowerOf2) => cast(T*)((cast(size_t)ptr + (pot - 1)) & -pot);
+Aligns a pointer to the closest multiple of `alignment`,
+which is equal to or larger than `value`.
+*/
+T* alignTo(T)(return scope T* ptr, size_t alignment)
+in (alignment.isPowerOf2)
+	=> cast(T*)((cast(size_t)ptr + alignment - 1) & -alignment);
+
+/// ditto
+size_t alignTo(size_t alignment)(size_t n) if (alignment.isPowerOf2)
+	=> (n + alignment - 1) & -alignment;
 
 unittest {
 	assert(alignTo(cast(void*)65, 64) == cast(void*)128);
@@ -70,23 +73,34 @@ unittest {
 
 @safe:
 /// Returns whether the (positive) argument is an integral power of two.
-@property bool isPowerOf2(size_t n)
-in (n > 0) => (n & n - 1) == 0;
+bool isPowerOf2(size_t n)
+	=> n > 0 && (n & n - 1) == 0;
+
+unittest {
+	assert(isPowerOf2(1));
+	assert(isPowerOf2(2));
+	assert(isPowerOf2(4));
+	assert(isPowerOf2(8));
+	assert(isPowerOf2(16));
+	assert(!isPowerOf2(0));
+	assert(!isPowerOf2(3));
+}
+
+size_t roundPow2(size_t v)
+	=> v ? size_t(1) << bsr(v) : 0;
+
+unittest {
+	static assert(roundPow2(0) == 0);
+	static assert(roundPow2(3) == 2);
+	static assert(roundPow2(4) == 4);
+}
 
 version (LDC) {
-	pragma(LDC_intrinsic, "llvm.x86.sse2.pmovmskb.128")
-	uint moveMask(ubyte16);
+	import ldc.gccbuiltins_x86;
+
+	alias moveMask = __builtin_ia32_pmovmskb128;
 } else version (GNU) {
 	import gcc.builtins;
 
 	alias moveMask = __builtin_ia32_pmovmskb128;
-}
-
-template SIMDFromScalar(V, alias scalar) {
-	// This wrapper is needed for optimal performance with LDC and
-	// doesn't hurt GDC's inlining.
-	V SIMDFromScalar() {
-		enum V asVectorEnum = scalar;
-		return asVectorEnum;
-	}
 }

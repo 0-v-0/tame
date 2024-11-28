@@ -1,6 +1,6 @@
+// Modified from https://github.com/jnschulze/LockFreeQueue.d/blob/master/collection/LockFreeQueue.d
 module tame.lockfree.queue;
 
-// From https://github.com/jnschulze/LockFreeQueue.d/blob/master/collection/LockFreeQueue.d
 import core.atomic : MemoryOrder, CAS = cas;
 
 private alias cas = CAS!(MemoryOrder.raw, MemoryOrder.raw);

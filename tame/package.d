@@ -1,11 +1,12 @@
 module dast;
 
-public import tame.ascii,
-tame.buffer,
+public import tame.buffer,
+tame.container,
 tame.conv,
 tame.meta,
 tame.misc,
-tame.nogc,
 tame.parse,
+tame.unsafe,
 tame.string,
+tame.text,
 tame.uri;

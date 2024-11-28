@@ -4,9 +4,13 @@ import std.ascii,
 std.meta,
 std.traits;
 
+version (LDC) {
+	pragma(LDC_no_moduleinfo);
+}
+
 package:
 
-int numDigits(T : ulong)(T num) @trusted {
+int numDigits(T : ulong)(T num, uint radix = 10) @trusted {
 	alias U = AliasSeq!(uint, ulong)[T.sizeof / 8];
 	static if (isSigned!T) {
 		int digits = void;
@@ -23,7 +27,7 @@ int numDigits(T : ulong)(T num) @trusted {
 		U n = num;
 	}
 	for (; n; digits++)
-		n /= 10;
+		n /= radix;
 	return digits;
 }
 
@@ -54,14 +58,47 @@ template isStdNullable(T) {
 	enum bool isStdNullable =
 		hasMember!(T, "isNull") &&
 		hasMember!(T, "get") &&
-		hasMember!(T, "nullify") &&
 		is(typeof(__traits(getMember, aggregate, "isNull")()) == bool) &&
-		!is(typeof(__traits(getMember, aggregate, "get")()) == void) &&
-		is(typeof(__traits(getMember, aggregate, "nullify")()) == void);
+		!is(typeof(__traits(getMember, aggregate, "get")()) == void);
 }
 
 version (D_Exceptions) unittest {
 	import std.typecons : Nullable;
 
 	static assert(isStdNullable!(Nullable!string));
+}
+
+// Edited From https://github.com/AuburnSounds/Dplug/blob/master/core/dplug/core/nogc.d
+
+// This module provides many utilities to deal with @nogc nothrow, in a situation with the runtime disabled.
+
+//
+// Fake @nogc
+//
+
+debug {
+	auto assumeNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T) {
+		enum attrs = functionAttributes!T | FunctionAttribute.nogc;
+		return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
+	}
+
+	auto assumeNothrowNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T) {
+		enum attrs = functionAttributes!T | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
+		return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs))t;
+	}
+
+	unittest {
+		void funcThatDoesGC() {
+			int a = 4;
+			int[] _ = [a, a];
+		}
+
+		void anotherFunction() nothrow @nogc {
+			assumeNothrowNoGC(() { funcThatDoesGC(); })();
+		}
+
+		void aThirdFunction() @nogc {
+			assumeNoGC(() { funcThatDoesGC(); })();
+		}
+	}
 }

@@ -147,27 +147,25 @@ auto tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
 			buffer ? buffer : malloc(T.sizeof * length))[0 .. length],
 		buffer is null);
 
-/*
- *
- * Returns a structure to your stack that contains a buffer of $(D size) size.
- * Memory is allocated by calling `.alloc!T(count)` on it in order to get
- * `count` elements of type `T`. The return value will be a RAII structure
- * that releases the memory back to the stack buffer upon destruction, so it can
- * be reused. The pointer within that RAII structure is aligned to
- * `T.alignof`. If the internal buffer isn't enough to fulfill the request
- * including padding from alignment, then `malloc()` is used instead.
- *
- * Warning:
- *   Always keep the return value of `.alloc()` around on your stack until
- *   you are done with its contents. Never pass it directly into functions as
- *   arguments!
- *
- * Params:
- *   size = The size of the buffer on the stack.
- *
- * Returns:
- *   A stack buffer allocator.
- *
+/**
+Returns a structure to your stack that contains a buffer of $(D size) size.
+Memory is allocated by calling `.alloc!T(count)` on it in order to get
+`count` elements of type `T`. The return value will be a RAII structure
+that releases the memory back to the stack buffer upon destruction, so it can
+be reused. The pointer within that RAII structure is aligned to
+`T.alignof`. If the internal buffer isn't enough to fulfill the request
+including padding from alignment, then `malloc()` is used instead.
+
+Warning:
+	Always keep the return value of `.alloc()` around on your stack until
+	you are done with its contents. Never pass it directly into functions as
+	arguments!
+
+Params:
+	e = The size of the buffer on the stack.
+
+Returns:
+	ack buffer allocator.
  */
 auto stackBuffer(size_t size)() @trusted {
 	// All that remains of this after inlining is a stack pointer decrement and

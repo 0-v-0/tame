@@ -1,15 +1,20 @@
+// Modified from https://github.com/MartinNowak/lock-free/blob/master/src/lock_free/rwqueue.d
 module tame.lockfree.rwqueue;
 
 import core.atomic;
-import core.bitop : bsr;
+import tame.bitop : roundPow2;
 
-/**
- * A Lock-Free Single-Reader, Single-Writer (SRSW) FIFO queue.
- */
-struct RWQueue(T, size_t N = roundPow2!(PAGE_SIZE / T.sizeof)) if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
+/++
+A Lock-Free Single-Reader, Single-Writer (SRSW) FIFO queue.
+
+Params:
+	T = the type of the elements to store
+	N = the capacity of the queue, must be a power of 2
++/
+struct RWQueue(T, size_t N = roundPow2(PAGE_SIZE / T.sizeof)) if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
 {
 	static assert(N, "Cannot have a capacity of 0.");
-	static assert(roundPow2!N == N, "The capacity must be a power of 2");
+	static assert(roundPow2(N) == N, "The capacity must be a power of 2");
 	enum capacity = N;
 
 	@property size_t length() const => atomicLoad!(MO.acq)(_wpos) - atomicLoad!(MO.acq)(_rpos);
@@ -61,14 +66,6 @@ private:
 alias MO = MemoryOrder;
 
 enum PAGE_SIZE = 4096;
-
-enum roundPow2(size_t v) = v ? size_t(1) << bsr(v) : 0;
-
-unittest {
-	static assert(roundPow2!0 == 0);
-	static assert(roundPow2!3 == 2);
-	static assert(roundPow2!4 == 4);
-}
 
 version (unittest) {
 	import core.thread;
