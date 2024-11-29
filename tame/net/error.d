@@ -1,15 +1,17 @@
 module tame.net.error;
 
 public import std.exception;
-import std.conv : to;
 
 version (Windows) {
 	import core.sys.windows.winsock2;
 	import std.windows.syserror;
 
 	package alias errno = WSAGetLastError;
-} else version (Posix)
+} else version (Posix){
+	import core.sys.posix.netdb;
+
 	package import core.stdc.errno : errno;
+}
 
 version (CRuntime_Glibc) version = GNU_STRERROR;
 version (CRuntime_UClibc) version = GNU_STRERROR;
@@ -28,7 +30,11 @@ need to actually show up in the docs, since there's not really any public
 need for it outside of being a default argument.
 +/
 string formatSocketError(int err) @trusted nothrow {
+	import std.conv : to;
+
 	version (Posix) {
+		import core.stdc.string;
+
 		char[80] buf;
 		version (GNU_STRERROR) {
 			const(char)* cs = strerror_r(err, buf.ptr, buf.length);
@@ -59,6 +65,8 @@ On POSIX, getaddrinfo uses its own error codes, and thus has its own
 formatting function.
 +/
 string getGaiError(int err) @trusted nothrow {
+	import std.string : fromStringz;
+
 	version (Windows) {
 		return formatSocketError(err);
 	} else
@@ -71,6 +79,8 @@ string getGaiError(int err) @trusted nothrow {
 	=> formatSocketError(errno());
 
 pragma(inline, true) void checkError(int err, string msg) {
+	import tame.net.socket;
+
 	if (err == SOCKET_ERROR)
 		throw new SocketOSException(msg);
 }

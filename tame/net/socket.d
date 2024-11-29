@@ -59,7 +59,9 @@ private:
 		}
 	}
 
+	import core.stdc.errno;
 	import core.sys.posix.fcntl,
+	core.sys.posix.netinet.in_,
 	core.sys.posix.netinet.tcp,
 	core.sys.posix.sys.socket,
 	core.sys.posix.sys.time,
@@ -69,8 +71,9 @@ private:
 		_init = -1
 	}
 
+	package enum SOCKET_ERROR = -1;
+
 private:
-	enum SOCKET_ERROR = -1;
 
 	enum : int {
 		SD_RECEIVE = SHUT_RD,
@@ -313,7 +316,7 @@ public:
 			else
 				_family &= ~BIOFlag;
 		} else version (Posix) {
-			const x = fcntl(sock, F_GETFL, 0);
+			int x = fcntl(sock, F_GETFL, 0);
 			if (-1 == x)
 				return errno();
 			if (byes)
@@ -374,8 +377,7 @@ public:
 			} else version (Posix) {
 				if (EINPROGRESS == err)
 					return;
-			} else
-				static assert(0);
+			}
 			throw new SocketOSException("Unable to connect socket", err);
 		}
 	}
@@ -559,9 +561,9 @@ public:
 				msecs += WINSOCK_TIMEOUT_SKEW;
 			result = dur!"msecs"(msecs);
 		} else version (Posix) {
-			TimeVal tv;
-			getOption(level, option, (&tv.ctimeval)[0 .. 1]);
-			result = dur!"seconds"(tv.seconds) + dur!"usecs"(tv.microseconds);
+			timeval tv;
+			getOption(level, option, (&tv)[0 .. 1]);
+			result = dur!"seconds"(tv.tv_sec) + dur!"usecs"(tv.tv_usec);
 		} else
 			static assert(0);
 	}
@@ -683,7 +685,7 @@ public:
 		} else static if (is(typeof(TCP_KEEPIDLE)) && is(typeof(TCP_KEEPINTVL))) {
 			setOption(SocketOptionLevel.TCP, TCP_KEEPIDLE, time);
 			setOption(SocketOptionLevel.TCP, TCP_KEEPINTVL, interval);
-			setOption(SocketOptionLevel.SOCKET, SocketOption.KEEPALIVE, true);
+			setOption(SocketOptionLevel.SOCKET, SocketOption.keepAlive, true);
 		} else
 			throw new SocketFeatureException(
 				"Setting keep-alive options is not supported on this platform");
@@ -753,8 +755,8 @@ Socket[2] socketPair() {
 			throw new SocketOSException("Unable to create socket pair");
 
 		return [
-			Socket(socks[0], AddrFamily.UNIX),
-			Socket(socks[1], AddrFamily.UNIX)
+			Socket(cast(socket_t)socks[0], AddrFamily.UNIX),
+			Socket(cast(socket_t)socks[1], AddrFamily.UNIX)
 		];
 	} else version (Windows) {
 		// We do not have socketpair() on Windows, just manually create a
