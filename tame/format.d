@@ -1,26 +1,26 @@
-/**
- * @nogc formatting utilities
- *
- * Inspired by: https://github.com/weka-io/mecca/blob/master/src/mecca/lib/string.d
- *
- * Sink Types:
- * various functions in this module use "sinks" which are buffers or objects that get filled with
- * the formatting data while the format functions are running. The following sink types are
- * supported to be passed into these arguments:
- * - Arrays (`isArray!S && is(ForeachType!S : char))`)
- * - $(LREF NullSink)
- * - Object with `put(const(char)[])` and `put(char)` functions
- *
- * Passing in arrays will make the sink `@nogc pure nothrow @safe` as everything will be written
- * into that memory. Passing in arrays that are too short to hold all the data will trigger a
- * `RangeError` or terminate the program in betterC.
- *
- * Passing in a $(LREF NullSink) instance will not allocate any memory and just count the bytes that
- * will be allocated.
- *
- * Otherwise any type that contains a `put` method that can be called both with `const(char)[]` and
- * with `char` arguments can be used.
- */
+/++
+@nogc formatting utilities
+
+Inspired by: https://github.com/weka-io/mecca/blob/master/src/mecca/lib/string.d
+
+Sink Types:
+various functions in this module use "sinks" which are buffers or objects that get filled with
+the formatting data while the format functions are running. The following sink types are
+supported to be passed into these arguments:
+- Arrays (`isArray!S && is(ForeachType!S : char))`)
+- $(LREF NullSink)
+- Object with `put(const(char)[])` and `put(char)` functions
+
+Passing in arrays will make the sink `@nogc pure nothrow @safe` as everything will be written
+into that memory. Passing in arrays that are too short to hold all the data will trigger a
+`RangeError` or terminate the program in betterC.
+
+Passing in a $(LREF NullSink) instance will not allocate any memory and just count the bytes that
+will be allocated.
+
+Otherwise any type that contains a `put` method that can be called both with `const(char)[]` and
+with `char` arguments can be used.
++/
 module tame.format;
 
 import std.meta,
@@ -71,18 +71,18 @@ private template isDuration(T) {
 }
 
 /**
- * Formats values to with fmt template into provided sink.
- * Note: it supports only a basic subset of format type specifiers, main usage is for nogc logging
- * and error messages formatting. But more cases can be added as needed.
- *
- * WARN: %s accepts pointer to some char assuming it's a zero terminated string
- *
- * Params:
- *     fmt  = The format string, much like in std.format
- *     sink = The sink where the full string should be written to, see section "Sink Types"
- *     args = The arguments to fill the format string with
- *
- * Returns: the length of the formatted string.
+Formats values to with fmt template into provided sink.
+Note: it supports only a basic subset of format type specifiers, main usage is for nogc logging
+and error messages formatting. But more cases can be added as needed.
+
+WARN: %s accepts pointer to some char assuming it's a zero terminated string
+
+Params:
+	fmt  = The format string, much like in std.format
+	sink = The sink where the full string should be written to, see section "Sink Types"
+	args = The arguments to fill the format string with
+
+Returns: the length of the formatted string.
  */
 size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args args) {
 	// TODO: not pure because of float formatter
@@ -274,8 +274,8 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 }
 
 /**
- * Same as `nogcFormatTo`, but it internally uses static malloc buffer to write formatted string to.
- * So be careful that next call replaces internal buffer data and previous result isn't valid anymore.
+	Same as `nogcFormatTo`, but it internally uses static malloc buffer to write formatted string to.
+	So be careful that next call replaces internal buffer data and previous result isn't valid anymore.
  */
 const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 	static StringSink str;
@@ -461,7 +461,7 @@ unittest {
 }
 
 /**
- * Gets size needed to hold formatted string result
+	Gets size needed to hold formatted string result
  */
 size_t getFormatSize(string fmt = "%s", Args...)(auto ref Args args) nothrow @nogc {
 	NullSink ns;
@@ -757,9 +757,9 @@ private template getNestedArrayFmt(string fmt) {
 }
 
 /**
- * Splits format string based on the same rules as described here: https://dlang.org/phobos/std_format.html
- * In addition it supports 'p' as a pointer format specifier to be more compatible with `printf`.
- * It supports nested arrays format specifier too.
+	Splits format string based on the same rules as described here: https://dlang.org/phobos/std_format.html
+	In addition it supports 'p' as a pointer format specifier to be more compatible with `printf`.
+	It supports nested arrays format specifier too.
  */
 template splitFmt(string fmt) {
 	enum spec(int j, FMT f, string def) = FmtSpec(j, f, def);
@@ -1069,8 +1069,8 @@ version (D_BetterC) {
 }
 
 /**
- * Formats SysTime as ISO extended string.
- * Only UTC format supported.
+	Formats SysTime as ISO extended string.
+	Only UTC format supported.
  */
 size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 	mixin SinkWriter!S;
@@ -1215,9 +1215,9 @@ version (D_BetterC) {
 }
 
 /**
- * Formats duration.
- * It uses custom formatter that is inspired by std.format output, but a bit shorter.
- * Note: ISO 8601 was considered, but it's not as human readable as used format.
+	Formats duration.
+	It uses custom formatter that is inspired by std.format output, but a bit shorter.
+	Note: ISO 8601 was considered, but it's not as human readable as used format.
  */
 size_t formatDuration(S)(auto ref scope S sink, Duration val) {
 	mixin SinkWriter!S;

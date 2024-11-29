@@ -2,10 +2,10 @@ module tame.buffer;
 
 enum maxAlloca = 2048;
 
-/**
- * Fixed maximum number of items on the stack. Memory is a static stack buffer.
- * This buffer can be filled up and cleared for reuse.
- */
+/++
+	Fixed maximum number of items on the stack. Memory is a static stack buffer.
+	This buffer can be filled up and cleared for reuse.
++/
 
 struct FixedBuffer(size_t LEN, T = char) if (T.sizeof == 1) {
 	invariant (pos <= LEN);
@@ -147,7 +147,7 @@ auto tempBuffer(T, alias length, size_t maxAlloca = .maxAlloca)(
 			buffer ? buffer : malloc(T.sizeof * length))[0 .. length],
 		buffer is null);
 
-/**
+/++
 Returns a structure to your stack that contains a buffer of $(D size) size.
 Memory is allocated by calling `.alloc!T(count)` on it in order to get
 `count` elements of type `T`. The return value will be a RAII structure
@@ -166,7 +166,7 @@ Params:
 
 Returns:
 	ack buffer allocator.
- */
++/
 auto stackBuffer(size_t size)() @trusted {
 	// All that remains of this after inlining is a stack pointer decrement and
 	// a mov instruction for the `null`.

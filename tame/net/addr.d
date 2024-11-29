@@ -1,10 +1,9 @@
-module tame.net.address;
+module tame.net.addr;
 
-import std.string : indexOf, fromStringz;
-import std.conv : to;
+import std.string : fromStringz;
 import core.stdc.string;
-import std.internal.cstring;
 import tame.net.error;
+import tame.string : indexOf;
 
 version (iOS)
 	version = iOSDerived;
@@ -28,65 +27,64 @@ version (Windows) {
 // dfmt off
 
 /// The communication domain used to resolve an address.
-enum AddressFamily: ushort {
-	UNSPEC =     AF_UNSPEC,     /// Unspecified address family
-	UNIX =       AF_UNIX,       /// Local communication (Unix socket)
-	INET =       AF_INET,       /// Internet Protocol version 4
-	IPX =        AF_IPX,        /// Novell IPX
-	APPLETALK =  AF_APPLETALK,  /// AppleTalk
-	INET6 =      AF_INET6,      /// Internet Protocol version 6
+enum AddrFamily: ushort {
+	unspecified =	AF_UNSPEC, // Unspecified address family
+	UNIX =			AF_UNIX,       /// Local communication (Unix socket)
+	IPv4 =			AF_INET,       /// Internet Protocol version 4
+	IPv6 =			AF_INET6,      /// Internet Protocol version 6
 }
 
 /// Communication semantics
-enum SocketType: int {
-	STREAM =     SOCK_STREAM,           /// Sequenced, reliable, two-way communication-based byte streams
-	DGRAM =      SOCK_DGRAM,            /// Connectionless, unreliable datagrams with a fixed maximum length; data may be lost or arrive out of order
-	RAW =        SOCK_RAW,              /// Raw protocol access
-	RDM =        SOCK_RDM,              /// Reliably-delivered message datagrams
-	SEQPACKET =  SOCK_SEQPACKET,        /// Sequenced, reliable, two-way connection-based datagrams with a fixed maximum length
+enum SocketType {
+	unknown =	 -1,			/// unspecified socket type, mostly as resolve hint
+	stream =	SOCK_STREAM,	/// Sequenced, reliable, two-way communication-based byte streams
+	dgram =		SOCK_DGRAM,		/// Connectionless, unreliable datagrams with a fixed maximum length; data may be lost or arrive out of order
+	raw =		SOCK_RAW,		/// Raw protocol access
+	rdm =		SOCK_RDM,		/// Reliably-delivered message datagrams
+	seqpacket =	SOCK_SEQPACKET,	/// Sequenced, reliable, two-way connection-based datagrams with a fixed maximum length
 }
 
 /// Protocol
-enum ProtocolType: int {
-	IP =    IPPROTO_IP,         /// Internet Protocol version 4
-	ICMP =  IPPROTO_ICMP,       /// Internet Control Message Protocol
-	IGMP =  IPPROTO_IGMP,       /// Internet Group Management Protocol
-	GGP =   IPPROTO_GGP,        /// Gateway to Gateway Protocol
-	TCP =   IPPROTO_TCP,        /// Transmission Control Protocol
-	PUP =   IPPROTO_PUP,        /// PARC Universal Packet Protocol
-	UDP =   IPPROTO_UDP,        /// User Datagram Protocol
-	IDP =   IPPROTO_IDP,        /// Xerox NS protocol
-	RAW =   IPPROTO_RAW,        /// Raw IP packets
-	IPV6 =  IPPROTO_IPV6,       /// Internet Protocol version 6
+enum Protocol {
+	IP =    IPPROTO_IP,		/// Internet Protocol version 4
+	ICMP =  IPPROTO_ICMP,	/// Internet Control Message Protocol
+	IGMP =  IPPROTO_IGMP,	/// Internet Group Management Protocol
+	GGP =   IPPROTO_GGP,	/// Gateway to Gateway Protocol
+	TCP =   IPPROTO_TCP,	/// Transmission Control Protocol
+	PUP =   IPPROTO_PUP,	/// PARC Universal Packet Protocol
+	UDP =   IPPROTO_UDP,	/// User Datagram Protocol
+	IDP =   IPPROTO_IDP,	/// Xerox NS protocol
+	RAW =   IPPROTO_RAW,	/// Raw IP packets
+	IPV6 =  IPPROTO_IPV6,	/// Internet Protocol version 6
 }
 
 // dfmt on
 
-/// Holds information about a socket _address retrieved by `getAddressInfo`.
-struct AddressInfo {
-	AddressFamily family; /// Address _family
+/// Holds information about a socket _address retrieved by `getAddrInfo`.
+struct AddrInfo {
+	AddrFamily family; /// Address _family
 	SocketType type; /// Socket _type
-	ProtocolType protocol; /// Protocol
+	Protocol protocol; /// Protocol
 	Address address; /// Socket _address
-	string canonicalName; /// Canonical name, when `AddressInfoFlags.CANONNAME` is used.
+	string canonicalName; /// Canonical name, when `AddrInfoFlags.canonName` is used.
 }
 
 /++
 A subset of flags supported on all platforms with getaddrinfo.
-Specifies option flags for `getAddressInfo`.
+Specifies option flags for `getAddrInfo`.
 +/
-enum AddressInfoFlags : int {
+enum AddrInfoFlags {
 	/// The resulting addresses will be used in a call to `Socket.bind`.
-	PASSIVE = AI_PASSIVE,
+	passive = AI_PASSIVE,
 
-	/// The canonical name is returned in `canonicalName` member in the first `AddressInfo`.
-	CANONNAME = AI_CANONNAME,
+	/// The canonical name is returned in `canonicalName` member in the first `AddrInfo`.
+	canonName = AI_CANONNAME,
 
 	/++
-	The `node` parameter passed to `getAddressInfo` must be a numeric string.
+	The `node` parameter passed to `getAddrInfo` must be a numeric string.
 	This will suppress any potentially lengthy network host address lookups.
 	+/
-	NUMERICHOST = AI_NUMERICHOST,
+	numericHost = AI_NUMERICHOST,
 }
 
 /++
@@ -94,50 +92,50 @@ Provides protocol-independent translation from host names to socket
 addresses. If advanced functionality is not required, consider using
 `getAddress` for compatibility with older systems.
 
-Returns: Array with one `AddressInfo` per socket address.
+Returns: Array with one `AddrInfo` per socket address.
 
-Throws: `SocketParameterException` on invalid parameters
+Throws: `SocketParamException` on invalid parameters
 
 Params:
 	node     = string containing host name or numeric address
 	options  = optional additional parameters, identified by type:
 				`string` - service name or port number
-				`AddressInfoFlags` - option flags
-				`AddressFamily` - address family to filter by
+				`AddrInfoFlags` - option flags
+				`AddrFamily` - address family to filter by
 				`SocketType` - socket type to filter by
-				`ProtocolType` - protocol to filter by
+				`Protocol` - protocol to filter by
 
 Example:
 ---
 // Roundtrip DNS resolution
-auto results = getAddressInfo("www.digitalmars.com");
+auto results = getAddrInfo("www.digitalmars.com");
 assert(!results.empty);
 
 // Canonical name
-results = getAddressInfo("www.digitalmars.com", AddressInfoFlags.CANONNAME);
+results = getAddrInfo("www.digitalmars.com", AddrInfoFlags.canonName);
 assert(!results.empty && results.front.canonicalName == "digitalmars.com");
 
 // IPv6 resolution
-results = getAddressInfo("ipv6.google.com");
-assert(results.front.family == AddressFamily.INET6);
+results = getAddrInfo("ipv6.google.com");
+assert(results.front.family == AddrFamily.IPv6);
 
 // Multihomed resolution
-results = getAddressInfo("google.com");
+results = getAddrInfo("google.com");
 uint length;
 foreach (_; results)
 	++length;
 assert(length > 1);
 
 // Parsing IPv4
-results = getAddressInfo("127.0.0.1", AddressInfoFlags.NUMERICHOST);
-assert(!results.empty && results.front.family == AddressFamily.INET);
+results = getAddrInfo("127.0.0.1", AddrInfoFlags.numericHost);
+assert(!results.empty && results.front.family == AddrFamily.IPv4);
 
 // Parsing IPv6
-results = getAddressInfo("::1", AddressInfoFlags.NUMERICHOST);
-assert(!results.empty && results.front.family == AddressFamily.INET6);
+results = getAddrInfo("::1", AddrInfoFlags.numericHost);
+assert(!results.empty && results.front.family == AddrFamily.IPv6);
 ---
 +/
-auto getAddressInfo(A...)(scope const(char)[] node, scope A options) {
+auto getAddrInfo(A...)(scope const(char)[] node, scope A options) {
 	const(char)[] service = null;
 	addrinfo hints;
 	hints.ai_family = AF_UNSPEC;
@@ -146,22 +144,22 @@ auto getAddressInfo(A...)(scope const(char)[] node, scope A options) {
 		alias T = typeof(opt);
 		static if (is(T : const(char)[]))
 			service = options[i];
-		else static if (is(T == AddressInfoFlags))
+		else static if (is(T == AddrInfoFlags))
 			hints.ai_flags |= opt;
-		else static if (is(T == AddressFamily))
+		else static if (is(T == AddrFamily))
 			hints.ai_family = opt;
 		else static if (is(T == SocketType))
 			hints.ai_socktype = opt;
-		else static if (is(T == ProtocolType))
+		else static if (is(T == Protocol))
 			hints.ai_protocol = opt;
 		else
-			static assert(0, "Unknown getAddressInfo option type: " ~ T.stringof);
+			static assert(0, "Unknown getAddrInfo option type: " ~ T.stringof);
 	}
 
 	if (node.length > NI_MAXHOST - 1)
-		throw new SocketParameterException("Host name too long");
+		throw new SocketParamException("Host name too long");
 	if (service.length > NI_MAXSERV - 1)
-		throw new SocketParameterException("Service name too long");
+		throw new SocketParamException("Service name too long");
 	return (() @trusted => getAddressInfoImpl(node, service, &hints))();
 }
 
@@ -175,10 +173,10 @@ auto getAddressInfo(A...)(scope const(char)[] node, scope A options) {
 		alias breakSafety this;
 	}
 
-	assert(!__traits(compiles, () { getAddressInfo("", Oops.init); }), "getAddressInfo breaks @safe");
+	assert(!__traits(compiles, () { getAddrInfo("", Oops.init); }), "getAddrInfo breaks @safe");
 }
 
-struct AddressInfoList {
+struct AddrInfoList {
 	private {
 		addrinfo* head;
 		union {
@@ -210,12 +208,12 @@ pure:
 
 		int errCode() @trusted => head ? 0 : err;
 
-		AddressInfo front() @trusted
+		AddrInfo front() @trusted
 		in (head && ai) =>
-			AddressInfo(
-				cast(AddressFamily)ai.ai_family,
+			AddrInfo(
+				cast(AddrFamily)ai.ai_family,
 				cast(SocketType)ai.ai_socktype,
-				cast(ProtocolType)ai.ai_protocol,
+				cast(Protocol)ai.ai_protocol,
 				Address(cast(sockaddr*)ai.ai_addr, cast(socklen_t)ai.ai_addrlen),
 				cast(string)fromStringz(ai.ai_canonname));
 	}
@@ -227,54 +225,56 @@ pure:
 }
 
 private auto getAddressInfoImpl(scope const(char)[] node, scope const(char)[] service, addrinfo* hints) @system {
-	addrinfo* ai_res = void;
-
-	const ret = getaddrinfo(
-		node.tempCString(),
-		service.tempCString(),
-		hints, &ai_res);
-	enforce(ret == 0, new SocketOSException("getaddrinfo error", ret));
-	return AddressInfoList(ai_res);
+	addrinfo* res = void;
+	char[NI_MAXHOST] nbuf = void;
+	if (node.length)
+		(cast(char*)memcpy(nbuf.ptr, node.ptr, node.length))[node.length] = 0;
+	char[NI_MAXSERV] sbuf = void;
+	if (service.length)
+		(cast(char*)memcpy(sbuf.ptr, service.ptr, service.length))[service.length] = 0;
+	const err = getaddrinfo(node.length ? nbuf.ptr : null,
+		service.length ? sbuf.ptr : null, hints, &res);
+	enforce(err == 0, new SocketOSException("getaddrinfo error", err));
+	return AddrInfoList(res, err);
 }
 
 unittest {
 	softUnittest({
 		// Roundtrip DNS resolution
-		auto results = getAddressInfo("www.digitalmars.com");
+		auto results = getAddrInfo("www.digitalmars.com");
 		assert(!results.empty);
 
 		// Canonical name
-		results = getAddressInfo("www.digitalmars.com", AddressInfoFlags.CANONNAME);
+		results = getAddrInfo("www.digitalmars.com", AddrInfoFlags.canonName);
 		assert(!results.empty && results.front.canonicalName == "digitalmars.com");
 
 		// IPv6 resolution
-		//results = getAddressInfo("ipv6.google.com");
-		//assert(results.front.family == AddressFamily.INET6);
+		//results = getAddrInfo("ipv6.google.com");
+		//assert(results.front.family == AddrFamily.IPv6);
 
 		// Multihomed resolution
-		//results = getAddressInfo("google.com");
+		//results = getAddrInfo("google.com");
 		//uint length;
 		//foreach (_; results)
 		//	++length;
 		//assert(length > 1);
 
 		// Parsing IPv4
-		results = getAddressInfo("127.0.0.1", AddressInfoFlags.NUMERICHOST);
-		assert(!results.empty && results.front.family == AddressFamily.INET);
+		results = getAddrInfo("127.0.0.1", AddrInfoFlags.numericHost);
+		assert(!results.empty && results.front.family == AddrFamily.IPv4);
 
 		// Parsing IPv6
-		results = getAddressInfo("::1", AddressInfoFlags.NUMERICHOST);
-		assert(!results.empty && results.front.family == AddressFamily.INET6);
+		results = getAddrInfo("::1", AddrInfoFlags.numericHost);
+		assert(!results.empty && results.front.family == AddrFamily.IPv6);
 	});
 
-	auto results = getAddressInfo(null, "1234", AddressInfoFlags.PASSIVE,
-		SocketType.STREAM, ProtocolType.TCP, AddressFamily.INET);
-	assert(!results.empty);
-	assert(results.front.address.toString() == "0.0.0.0:1234");
+	auto results = getAddrInfo(null, "1234", AddrInfoFlags.passive,
+		SocketType.stream, Protocol.TCP, AddrFamily.IPv4);
+	assert(!results.empty && results.front.address.toString() == "0.0.0.0:1234");
 }
 
 struct AddressList {
-	AddressInfoList infos;
+	AddrInfoList infos;
 
 pure nothrow @nogc:
 	@property bool empty() const => infos.empty;
@@ -286,7 +286,7 @@ pure nothrow @nogc:
 
 /++
 Provides _protocol-independent translation from host names to socket
-addresses. Uses `getAddressInfo` if the current system supports it,
+addresses. Uses `getAddrInfo` if the current system supports it,
 and `InternetHost` otherwise.
 
 Returns: Array with one `Address` instance per socket address.
@@ -307,7 +307,7 @@ catch (SocketException e)
 ---
 +/
 auto getAddress(scope const(char)[] hostname, scope const(char)[] service = null) {
-	return AddressList(getAddressInfo(hostname, service));
+	return AddressList(getAddrInfo(hostname, service));
 }
 
 unittest {
@@ -319,9 +319,9 @@ unittest {
 
 /++
 Provides _protocol-independent parsing of network addresses. Does not
-attempt name resolution. Uses `getAddressInfo` with
-`AddressInfoFlags.NUMERICHOST` if the current system supports it, and
-`InetAddress` otherwise.
+attempt name resolution. Uses `getAddrInfo` with
+`AddrInfoFlags.numericHost` if the current system supports it, and
+`IPv4Addr` otherwise.
 
 Returns: An `Address` instance representing specified address.
 
@@ -336,7 +336,7 @@ try {
 	writefln("Looking up reverse of %s:",
 		address.toAddrString());
 	try {
-		string reverse = address.toHostNameString();
+		string reverse = address.toHostName();
 		if (reverse)
 			writefln("  Reverse name: %s", reverse);
 		else
@@ -350,8 +350,9 @@ try {
 }
 ---
 +/
-auto parseAddress(scope const(char)[] hostaddr, scope const(char)[] service = null) {
-	return getAddressInfo(hostaddr, service, AddressInfoFlags.NUMERICHOST).front.address;
+auto parseAddress(scope const(char)[] host, scope const(char)[] service = null) {
+	auto info = getAddrInfo(host, service, AddrInfoFlags.numericHost);
+	return info.front.address;
 }
 
 unittest {
@@ -359,7 +360,7 @@ unittest {
 		const address = parseAddress("63.105.9.61");
 		assert(address.toAddrString() == "63.105.9.61");
 
-		assert(collectException!SocketException(parseAddress("Invalid IP address")));
+		assert(collectException!SocketException(parseAddress("Invalid Address")));
 	});
 }
 
@@ -388,7 +389,7 @@ struct Address {
 
 	Throws: `AddressException` on error
 	+/
-	string toHostNameString() const => toHostString(false);
+	string toHostName() const => toHostString(false);
 
 	/++
 	Attempts to retrieve the numeric port number as a string.
@@ -397,7 +398,14 @@ struct Address {
 	+/
 	string toPortString() const => toServiceString(true);
 
-	// Common code for toAddrString and toHostNameString
+	/++
+	Attempts to retrieve the service name as a string.
+
+	Throws: `AddressException` on failure
+	+/
+	string toServiceName() const => toServiceString(false);
+
+	// Common code for toAddrString and toHostName
 	private string toHostString(bool numeric) @trusted const {
 		char[NI_MAXHOST] buf = void;
 		const ret = getnameinfo(
@@ -419,7 +427,7 @@ struct Address {
 		return fromStringz(buf.ptr).idup;
 	}
 
-	// Common code for toPortString and toServiceNameString
+	// Common code for toPortString and toServiceName
 	private string toServiceString(bool numeric) @trusted const {
 		char[NI_MAXSERV] buf = void;
 		enforce(getnameinfo(
@@ -451,32 +459,32 @@ pure nothrow @nogc:
 	}
 
 	/// Family of this address.
-	@property AddressFamily addressFamily() const
-		=> name ? cast(AddressFamily)name.sa_family : AddressFamily.UNSPEC;
+	@property AddrFamily addressFamily() const
+		=> name ? cast(AddrFamily)name.sa_family : AddrFamily.unspecified;
 
-	@property private void addressFamily(AddressFamily af) {
+	@property private void addressFamily(AddrFamily af) {
 		name.sa_family = af;
 	}
 }
 
-struct InetAddress {
+struct IPv4Addr {
 	alias address this;
 
 	private sockaddr_in sin;
 
-	enum ANY = INADDR_ANY; /// Any IPv4 host address.
-	enum LOOPBACK = INADDR_LOOPBACK; /// The IPv4 loopback address.
-	enum NONE = INADDR_NONE; /// An invalid IPv4 host address.
-	enum ushort PORT_ANY = 0; /// Any IPv4 port number.
+	enum any = INADDR_ANY; /// Any IPv4 host address.
+	enum loopback = INADDR_LOOPBACK; /// The IPv4 loopback address.
+	enum none = INADDR_NONE; /// An invalid IPv4 host address.
+	enum ushort anyPort = 0; /// Any IPv4 port number.
 
 	/++
-	Construct a new `InetAddress`.
+	Construct a new `IPv4Addr`.
 	Params:
 		addr = an IPv4 address string in the dotted-decimal form a.b.c.d.
-		port = port number, may be `PORT_ANY`.
+		port = port number, may be `anyPort`.
 	+/
 	this(scope const(char)[] addr, ushort port) {
-		sin.sin_family = AddressFamily.INET;
+		sin.sin_family = AddrFamily.IPv4;
 		sin.sin_addr.s_addr = htonl(parse(addr));
 		sin.sin_port = htons(port);
 	}
@@ -495,31 +503,31 @@ nothrow @nogc:
 	}
 
 	/++
-	Construct a new `InetAddress`.
+	Construct a new `IPv4Addr`.
 	Params:
 		addr = (optional) an IPv4 address in host byte order, may be `ADDR_ANY`.
-		port = port number, may be `PORT_ANY`.
+		port = port number, may be `anyPort`.
 	+/
 	this(uint addr, ushort port) pure {
-		sin.sin_family = AddressFamily.INET;
+		sin.sin_family = AddrFamily.IPv4;
 		sin.sin_addr.s_addr = htonl(addr);
 		sin.sin_port = htons(port);
 	}
 
 	/// ditto
 	this(ushort port) pure {
-		sin.sin_family = AddressFamily.INET;
-		sin.sin_addr.s_addr = ANY;
+		sin.sin_family = AddrFamily.IPv4;
+		sin.sin_addr.s_addr = any;
 		sin.sin_port = htons(port);
 	}
 
 	/++
-	Construct a new `InetAddress`.
+	Construct a new `IPv4Addr`.
 	Params:
 		addr = A sockaddr_in as obtained from lower-level API calls such as getifaddrs.
 	+/
 	this(sockaddr_in addr) pure
-	in (addr.sin_family == AddressFamily.INET, "Socket address is not of INET family.") {
+	in (addr.sin_family == AddrFamily.IPv4, "Socket address is not of IPv4 family.") {
 		sin = addr;
 	}
 
@@ -531,7 +539,7 @@ nothrow @nogc:
 	+/
 	static uint parse(scope const(char)[] addr) @trusted {
 		if (addr.length > 15)
-			return NONE;
+			return none;
 
 		char[16] buf = void;
 		strncpy(buf.ptr, addr.ptr, addr.length)[addr.length] = 0;
@@ -551,7 +559,7 @@ nothrow @nogc:
 
 unittest {
 	softUnittest({
-		const ia = InetAddress("63.105.9.61", 80);
+		const ia = IPv4Addr("63.105.9.61", 80);
 		assert(ia.toString() == "63.105.9.61:80");
 	});
 
@@ -560,36 +568,36 @@ unittest {
 		sockaddr_in sin;
 
 		sin.sin_addr.s_addr = htonl(0x7F_00_00_01); // 127.0.0.1
-		sin.sin_family = AddressFamily.INET;
+		sin.sin_family = AddrFamily.IPv4;
 		sin.sin_port = htons(80);
 
-		const ia = InetAddress(sin);
+		const ia = IPv4Addr(sin);
 		assert(ia.toString() == "127.0.0.1:80");
 	});
 
 	if (runSlowTests)
 		softUnittest({
 			// test failing reverse lookup
-			const ia = InetAddress("255.255.255.255", 80);
-			assert(ia.toHostNameString() is null);
+			const ia = IPv4Addr("255.255.255.255", 80);
+			assert(ia.toHostName() is null);
 		});
 }
 
-struct Inet6Address {
+struct IPv6Addr {
 	alias address this;
 
 	private sockaddr_in6 sin6;
 
-	enum ushort PORT_ANY = 0; /// Any IPv6 port number.
+	enum ushort anyPort = 0; /// Any IPv6 port number.
 
 	/++
-	Construct a new `Inet6Address`.
+	Construct a new `IPv6Addr`.
 	Params:
-	  addr = an IPv6 address string in the colon-separated form a:b:c:d:e:f:g:h.
-	  port = port number, may be `PORT_ANY`.
+		addr = an IPv6 address string in the colon-separated form a:b:c:d:e:f:g:h.
+		port = port number, may be `anyPort`.
 	+/
-	this(scope const(char)[] addr, ushort port = PORT_ANY) {
-		sin6.sin6_family = AddressFamily.INET6;
+	this(scope const(char)[] addr, ushort port = anyPort) {
+		sin6.sin6_family = AddrFamily.IPv6;
 		sin6.sin6_port = htons(port);
 		sin6.sin6_addr = in6_addr(s6_addr8 : parse(addr));
 	}
@@ -597,46 +605,45 @@ struct Inet6Address {
 	/++
 	Parse an IPv6 host address string as described in RFC 2373, and return the
 	address.
-	Throws: `SocketException` on error.
 	+/
 	static ubyte[16] parse(scope const(char)[] addr) @trusted {
 		// Although we could use inet_pton here, it's only available on Windows
-		// versions starting with Vista, so use getAddressInfo with NUMERICHOST
+		// versions starting with Vista, so use getAddrInfo with numericHost
 		// instead.
-		auto results = getAddressInfo(addr, AddressInfoFlags.NUMERICHOST);
-		if (!results.empty && results.front.family == AddressFamily.INET6)
+		auto results = getAddrInfo(addr, AddrInfoFlags.numericHost);
+		if (!results.empty && results.front.family == AddrFamily.IPv6)
 			return (cast(sockaddr_in6*)results.front.address.name).sin6_addr.s6_addr;
-		return ANY;
+		return any;
 	}
 
 pure nothrow @nogc:
 
 	/++
-	Construct a new `Inet6Address`.
+	Construct a new `IPv6Addr`.
 	Params:
 	  addr = A sockaddr_in6 as obtained from lower-level API calls such as getifaddrs.
 	+/
 	this(sockaddr_in6 addr)
-	in (addr.sin6_family == AddressFamily.INET6, "Socket address is not of INET6 family.") {
+	in (addr.sin6_family == AddrFamily.IPv6, "Socket address is not of IPv6 family.") {
 		sin6 = addr;
 	}
 
 	/++
-	Construct a new `Inet6Address`.
+	Construct a new `IPv6Addr`.
 	Params:
 	  addr = (optional) an IPv6 host address in host byte order, or
 	         `ADDR_ANY`.
-	  port = port number, may be `PORT_ANY`.
+	  port = port number, may be `anyPort`.
 	+/
 	this(in ubyte[16] addr, ushort port) {
-		sin6.sin6_family = AddressFamily.INET6;
+		sin6.sin6_family = AddrFamily.IPv6;
 		sin6.sin6_addr.s6_addr = addr;
 		sin6.sin6_port = htons(port);
 	}
 
 	/// ditto
 	this(ushort port) {
-		sin6.sin6_family = AddressFamily.INET6;
+		sin6.sin6_family = AddrFamily.IPv6;
 		sin6.sin6_addr.s6_addr = ADDR_ANY;
 		sin6.sin6_port = htons(port);
 	}
@@ -644,7 +651,7 @@ pure nothrow @nogc:
 @property:
 
 	/// Any IPv6 host address.
-	static ref const(ubyte)[16] ANY() {
+	static ref const(ubyte)[16] any() {
 		static if (is(typeof(IN6ADDR_ANY))) {
 			version (Windows) {
 				static immutable addr = IN6ADDR_ANY.s6_addr;
@@ -658,7 +665,7 @@ pure nothrow @nogc:
 	}
 
 	/// The IPv6 loopback address.
-	static ref const(ubyte)[16] LOOPBACK() {
+	static ref const(ubyte)[16] loopback() {
 		static if (is(typeof(IN6ADDR_LOOPBACK))) {
 			version (Windows) {
 				static immutable addr = IN6ADDR_LOOPBACK.s6_addr;
@@ -683,7 +690,7 @@ pure nothrow @nogc:
 
 unittest {
 	softUnittest({
-		const ia = Inet6Address("::1", 80);
+		const ia = IPv6Addr("::1", 80);
 		assert(ia.toString() == "[::1]:80");
 	});
 
@@ -692,31 +699,31 @@ unittest {
 		sockaddr_in6 sin;
 
 		sin.sin6_addr.s6_addr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]; // [::1]
-		sin.sin6_family = AddressFamily.INET6;
+		sin.sin6_family = AddrFamily.IPv6;
 		sin.sin6_port = htons(80);
 
-		const ia = Inet6Address(sin);
+		const ia = IPv6Addr(sin);
 		assert(ia.toString() == "[::1]:80");
 	});
 }
 
 static if (is(sockaddr_un)) {
-	struct UnixAddress {
+	struct UnixAddr {
 		alias address this;
 
-		private sockaddr_un sun;
-		socklen_t nameLen;
+		private sockaddr_un sun = sockaddr_un(AddrFamily.UNIX, '?');
+		socklen_t nameLen = sun.sizeof;
 
 		/++
-		Construct a new `UnixAddress`.
+		Construct a new `UnixAddr`.
 		Params:
-		  path = a string containing the path to the Unix domain socket.
+			path = a string containing the path to the Unix domain socket.
 		+/
 		this(scope const(char)[] path) @trusted pure {
-			enforce(path.length <= sun.sun_path.sizeof, new SocketParameterException(
+			enforce(path.length <= sun.sun_path.sizeof, new SocketParamException(
 					"Path too long"));
-			sun.sun_family = AddressFamily.UNIX;
-			strncpy(sun.sun_path.ptr, path, sun.sun_path.length);
+			sun.sun_family = AddrFamily.UNIX;
+			strncpy(cast(char*)sun.sun_path.ptr, path.ptr, sun.sun_path.length);
 			auto len = sockaddr_un.init.sun_path.offsetof + path.length;
 			// Pathname socket address must be terminated with '\0'
 			// which must be included in the address length.
@@ -724,18 +731,18 @@ static if (is(sockaddr_un)) {
 				sun.sun_path[path.length] = 0;
 				++len;
 			}
-			nameLen = len;
+			nameLen = cast(socklen_t)len;
 		}
 
 	pure nothrow @nogc:
 
 		/++
-		Construct a new `UnixAddress`.
+		Construct a new `UnixAddr`.
 		Params:
 		  addr = a sockaddr_un as obtained from lower-level API calls such as getifaddrs.
 		+/
 		this(sockaddr_un addr)
-		in (addr.sun_family == AddressFamily.UNIX, "Socket address is not of UNIX family.") {
+		in (addr.sun_family == AddrFamily.UNIX, "Socket address is not of UNIX family.") {
 			sun = addr;
 		}
 
@@ -751,6 +758,8 @@ static if (is(sockaddr_un)) {
 
 	unittest {
 		import core.stdc.stdio : remove;
+		import std.internal.cstring;
+		import tame.net.socket;
 
 		version (iOSDerived) {
 			// Slightly different version of `std.file.deleteme` to reduce the path
@@ -775,9 +784,9 @@ static if (is(sockaddr_un)) {
 			names ~= "\0" ~ basePath ~ "-abstract\0unix\0socket";
 
 		foreach (name; names) {
-			auto address = UnixAddress(name);
+			auto address = UnixAddr(name);
 
-			auto listener = Socket(AddressFamily.UNIX, SocketType.STREAM);
+			auto listener = Socket(AddrFamily.UNIX, SocketType.stream);
 			scope (exit)
 				listener.close();
 			listener.bind(address);
@@ -786,11 +795,11 @@ static if (is(sockaddr_un)) {
 				if (name[0])
 					remove(name.tempCString());
 			}();
-			assert(listener.localAddress.toString() == name);
+			assert(listener.localAddr.toString() == name);
 
 			listener.listen(1);
 
-			pair[0] = Socket(AddressFamily.UNIX, SocketType.STREAM);
+			pair[0] = Socket(AddrFamily.UNIX, SocketType.stream);
 			scope (exit)
 				listener.close();
 
@@ -812,21 +821,21 @@ static if (is(sockaddr_un)) {
 			// domain socket pair or unbound socket. Let's confirm it
 			// returns successfully and doesn't throw anything.
 			// See https://issues.dlang.org/show_bug.cgi?id=20544
-			assertNotThrown(pair[1].remoteAddress().toString());
+			assertNotThrown(pair[1].remoteAddr.toString());
 		}
 	}
 }
 
-struct UnknownAddress {
+struct UnknownAddr {
 	alias address this;
 
 	private sockaddr sa;
 
 pure nothrow @nogc:
 	/++
-	Construct a new `UnknownAddress`.
+	Construct a new `UnknownAddr`.
 	Params:
-	  addr = a sockaddr as obtained from lower-level API calls such as getifaddrs.
+	addr = a sockaddr as obtained from lower-level API calls such as getifaddrs.
 	+/
 	this(sockaddr addr) {
 		sa = addr;

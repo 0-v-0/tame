@@ -1,11 +1,12 @@
 module tame.windows.charset;
 
+version (Windows):
 import core.sys.windows.windows;
 import std.windows.syserror : WindowsException;
 
-version (Windows)  : @safe:
+@safe:
 
-private void wenforce(T)(T value, string msg = null,
+private void wenforce(int value, string msg = null,
 	string file = __FILE__, size_t line = __LINE__) {
 	if (!value)
 		throw new WindowsException(GetLastError(), msg, file, line);

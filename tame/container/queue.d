@@ -1,18 +1,21 @@
 module tame.container.queue;
+
+import std.experimental.allocator : make;
+import std.experimental.allocator.mallocator : Mallocator;
 import std.traits : hasMember, hasIndirections;
 
 version (LDC) {
 	pragma(LDC_no_moduleinfo);
 }
 
-/**
- * Simple queue implemented as a singly linked list with a tail pointer.
- *
- * Allocations are non-GC and are damped by a free-list based on the nodes
- * that are removed. Note that elements lifetime must be managed
- * outside.
- */
-struct Queue(T) if (!hasMember!(T, "__xdtor")) {
+/++
+Simple queue implemented as a singly linked list with a tail pointer.
+
+Allocations are non-GC and are damped by a free-list based on the nodes
+that are removed. Note that elements lifetime must be managed
+outside.
++/
+struct Queue(T, alias Allocator = Mallocator.instance) if (!hasMember!(T, "__xdtor")) {
 private:
 
 	// Linked list node containing one element and pointer to the next node.
@@ -32,18 +35,15 @@ private:
 	size_t len;
 
 	// allocate a new node or recycle one from the stock.
-	Node* make(T value, Node* theNext = null) @trusted nothrow @nogc {
-		import std.experimental.allocator : make;
-		import std.experimental.allocator.mallocator : Mallocator;
-
+	Node* make(T value, Node* next = null) @trusted nothrow @nogc {
 		Node* result;
 		if (stock !is null) {
 			result = stock;
 			stock = result.next;
 			result.value = value;
-			result.next = theNext;
+			result.next = next;
 		} else {
-			result = Mallocator.instance.make!Node(value, theNext);
+			result = Allocator.make!Node(value, next);
 			// GC can dispose T managed member if it thinks they are no used...
 			static if (hasIndirections!T) {
 				import core.memory : GC;
@@ -56,8 +56,6 @@ private:
 
 	// free the stock of available free nodes.
 	void freeStock() @trusted @nogc nothrow {
-		import std.experimental.allocator.mallocator : Mallocator;
-
 		while (stock) {
 			Node* toFree = stock;
 			stock = stock.next;
@@ -66,7 +64,7 @@ private:
 
 				GC.removeRange(toFree);
 			}
-			Mallocator.instance.deallocate((cast(ubyte*)toFree)[0 .. Node.sizeof]);
+			Allocator.deallocate((cast(ubyte*)toFree)[0 .. Node.sizeof]);
 		}
 	}
 

@@ -80,20 +80,53 @@ unittest {
 	assert(s.empty);
 }
 
-bool canFind(in char[] s, char c) @trusted
-	=> memchr(s.ptr, c, s.length) !is null;
+bool canFind(in char[] s, char c) @trusted {
+	if (__ctfe) {
+		foreach (ch; s) {
+			if (ch == c)
+				return true;
+		}
+		return false;
+	}
+	return memchr(s.ptr, c, s.length) !is null;
+}
 
 unittest {
 	assert(canFind("foo", 'o'));
 	assert(!canFind("foo", 'z'));
+	assert(!canFind("", 'z'));
+	static assert(canFind("foo", 'o'));
+	static assert(!canFind("foo", 'z'));
 }
 
 ptrdiff_t indexOf(in char[] s, char c) @trusted {
+	if (__ctfe) {
+		foreach (i, ch; s) {
+			if (ch == c)
+				return i;
+		}
+		return -1;
+	}
 	const p = memchr(s.ptr, c, s.length);
 	return p ? p - cast(void*)s.ptr : -1;
 }
 
+/++
+Params:
+	s = string to search
+	c = character to search for
+	start = the index into s to start searching from
+Returns:
+	the index of the first occurrence of c in s, or -1 if not found
++/
 ptrdiff_t indexOf(in char[] s, char c, size_t start) @trusted {
+	if (__ctfe) {
+		foreach (i, ch; s[start .. $]) {
+			if (ch == c)
+				return i + start;
+		}
+		return -1;
+	}
 	const p = memchr(s.ptr + start, c, s.length - start);
 	return p ? p - cast(void*)s.ptr : -1;
 }
@@ -105,6 +138,43 @@ unittest {
 	assert(indexOf("hello", 'z') == -1);
 	assert(indexOf("hello", 'h', 1) == -1);
 	assert(indexOf("hello", 'e', 1) == 1);
+	static assert(indexOf("hello", 'h') == 0);
+	static assert(indexOf("hello", 'e') == 1);
+	static assert(indexOf("hello", 'h', 1) == -1);
+	static assert(indexOf("hello", 'e', 1) == 1);
+}
+
+ptrdiff_t lastIndexOf(in char[] s, char c) {
+	foreach_reverse (i, ch; s) {
+		if (ch == c)
+			return i;
+	}
+	return -1;
+}
+
+/++
+Params:
+	s = string to search
+	c = character to search for
+	start = the index into s to start searching from
+Returns:
+	the index of the last occurrence of c in s, or -1 if not found
++/
+ptrdiff_t lastIndexOf(in char[] s, char c, size_t start) {
+	return start <= s.length ? lastIndexOf(s[0 .. start], c) : -1;
+}
+
+unittest {
+	assert(lastIndexOf("hello", 'h') == 0);
+	assert(lastIndexOf("hello", 'e') == 1);
+	assert(lastIndexOf("hello", 'o') == 4);
+	assert(lastIndexOf("hello", 'z') == -1);
+	assert(lastIndexOf("hello", 'o', 5) == 4);
+	assert(lastIndexOf("hello", 'o', 2) == -1);
+	static assert(lastIndexOf("hello", 'h') == 0);
+	static assert(lastIndexOf("hello", 'e') == 1);
+	static assert(lastIndexOf("hello", 'o', 5) == 4);
+	static assert(lastIndexOf("hello", 'o', 2) == -1);
 }
 
 S stripLeft(S)(S input) {
@@ -118,6 +188,7 @@ S stripLeft(S)(S input) {
 
 unittest {
 	assert(stripLeft(" foo") == "foo");
+	static assert(stripLeft(" foo") == "foo");
 }
 
 S stripLeft(S)(S input, char c) {
@@ -133,6 +204,7 @@ unittest {
 	assert(stripLeft(" foo") == "foo");
 	assert(stripLeft("  foo", ' ') == "foo");
 	assert(stripLeft("  foo", 'h') == "  foo");
+	static assert(stripLeft(" foo") == "foo");
 }
 
 S stripRight(S)(S input) {

@@ -33,34 +33,34 @@ template scoped(T) if (classInstanceAlignment!T <= ubyte.max) {
 	alias aligned = alignTo!alignment;
 
 	static struct Scoped {
-		// Addition of `alignment` is required as `Scoped_store` can be misaligned in memory.
-		private void[aligned(size) + alignment] Scoped_store = void;
+		// Addition of `alignment` is required as `_store` can be misaligned in memory.
+		private void[aligned(size) + alignment] _store = void;
 
-		@property inout(T) Scoped_payload() inout {
-			void* alignedStore = cast(void*)aligned(cast(size_t)Scoped_store.ptr);
+		@property inout(T) payload() inout {
+			void* alignedStore = cast(void*)aligned(cast(size_t)_store.ptr);
 			// As `Scoped` can be unaligned moved in memory class instance should be moved accordingly.
-			immutable size_t d = alignedStore - Scoped_store.ptr;
+			immutable size_t d = alignedStore - _store.ptr;
 			assert(d < alignment);
-			auto currD = cast(ubyte*)&Scoped_store[$ - ubyte.sizeof];
+			auto currD = cast(ubyte*)&_store[$ - ubyte.sizeof];
 			if (d != *currD) {
 				import core.stdc.string : memmove;
 
-				memmove(alignedStore, Scoped_store.ptr + *currD, size);
+				memmove(alignedStore, _store.ptr + *currD, size);
 				*currD = cast(ubyte)d;
 			}
 			return cast(inout(T))alignedStore;
 		}
 
-		alias Scoped_payload this;
+		alias payload this;
 
 		@disable this();
 		@disable this(this);
-// dfmt off
+		// dfmt off
 		static if (hasMember!(T, "__xdtor"))
 			~this() {
 				// `destroy` will also write .init but we have no functions in druntime
 				// for deterministic finalization and memory releasing for now.
-				destroy(Scoped_payload);
+				destroy(payload);
 			}
 // dfmt on
 	}
@@ -72,11 +72,11 @@ template scoped(T) if (classInstanceAlignment!T <= ubyte.max) {
 		import core.lifetime : emplace, forward;
 
 		Scoped result = void;
-		void* alignedStore = cast(void*)aligned(cast(size_t)result.Scoped_store.ptr);
-		immutable size_t d = alignedStore - result.Scoped_store.ptr;
+		void* alignedStore = cast(void*)aligned(cast(size_t)result._store.ptr);
+		immutable size_t d = alignedStore - result._store.ptr;
 		assert(d < alignment);
-		*cast(ubyte*)&result.Scoped_store[$ - ubyte.sizeof] = cast(ubyte)d;
-		emplace!(Unqual!T)(result.Scoped_store[d .. $ - ubyte.sizeof], forward!args);
+		*cast(ubyte*)&result._store[$ - ubyte.sizeof] = cast(ubyte)d;
+		emplace!(Unqual!T)(result._store[d .. $ - ubyte.sizeof], forward!args);
 		return result;
 	}
 }

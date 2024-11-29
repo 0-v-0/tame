@@ -74,21 +74,21 @@ template getSymbolsWith(alias attr, symbols...) {
 alias Omit(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
 
 /**
- * Generates a mixin string for repeating code. It can be used to unroll variadic arguments.
- * A format string is instantiated a certain number times with an incrementing parameter.
- * The results are then concatenated using an optional joiner.
- *
- * Params:
- *   length = Number of elements you want to join. It is passed into format() as an incrementing number from [0 .. count$(RPAREN).
- *   fmt = The format string to apply on each instanciation. Use %1d$ to refer to the current index multiple times when necessary.
- *   joiner = Optional string that will be placed between instances. It could be a space or an arithmetic operation.
- *
- * Returns:
- *   The combined elements as a mixin string.
- *
- * See_Also:
- *   $(LINK2 http://forum.dlang.org/thread/vqfvihyezbmwcjkmpzin@forum.dlang.org, A simple way to do compile time loop unrolling)
- */
+Generates a mixin string for repeating code. It can be used to unroll variadic arguments.
+A format string is instantiated a certain number times with an incrementing parameter.
+The results are then concatenated using an optional joiner.
+
+Params:
+length = Number of elements you want to join. It is passed into format() as an incrementing number from [0 .. count$(RPAREN).
+fmt = The format string to apply on each instanciation. Use %1d$ to refer to the current index multiple times when necessary.
+joiner = Optional string that will be placed between instances. It could be a space or an arithmetic operation.
+
+Returns:
+The combined elements as a mixin string.
+
+See_Also:
+$(LINK2 http://forum.dlang.org/thread/vqfvihyezbmwcjkmpzin@forum.dlang.org, A simple way to do compile time loop unrolling)
+*/
 auto ctfeJoin(size_t length)(in string fmt, in string joiner = null) {
 	import std.range : iota;
 	import std.algorithm : map;

@@ -3,14 +3,6 @@ module tame.net.error;
 public import std.exception;
 import std.conv : to;
 
-/// Base exception thrown by `std.socket`.
-class SocketException : Exception {
-	mixin basicExceptionCtors;
-}
-
-version (CRuntime_Glibc) version = GNU_STRERROR;
-version (CRuntime_UClibc) version = GNU_STRERROR;
-
 version (Windows) {
 	import core.sys.windows.winsock2;
 	import std.windows.syserror;
@@ -19,15 +11,23 @@ version (Windows) {
 } else version (Posix)
 	package import core.stdc.errno : errno;
 
-	@safe:
+version (CRuntime_Glibc) version = GNU_STRERROR;
+version (CRuntime_UClibc) version = GNU_STRERROR;
 
-	/+
+@safe:
+
+/// Base exception thrown by `std.socket`.
+class SocketException : Exception {
+	mixin basicExceptionCtors;
+}
+
+/+
 Needs to be public so that SocketOSException can be thrown outside of
 std.socket (since it uses it as a default argument), but it probably doesn't
 need to actually show up in the docs, since there's not really any public
 need for it outside of being a default argument.
 +/
-	string formatSocketError(int err) @trusted nothrow {
+string formatSocketError(int err) @trusted nothrow {
 	version (Posix) {
 		char[80] buf;
 		version (GNU_STRERROR) {
@@ -140,7 +140,7 @@ nothrow:
 }
 
 /// Socket exception representing invalid parameters specified by user code.
-class SocketParameterException : SocketException {
+class SocketParamException : SocketException {
 	mixin basicExceptionCtors;
 }
 

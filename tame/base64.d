@@ -1,14 +1,14 @@
-/**
+/++
 	This module is used to decode and encode base64 char[] arrays.
-*/
++/
 module tame.base64;
 
-pure nothrow:
+@safe pure nothrow:
 
 unittest {
-	auto str = "Hello there, my name is Jeff.";
-	scope encodebuf = new char[encodedSize(cast(ubyte[])str)];
-	char[] encoded = encode(cast(ubyte[])str, encodebuf);
+	auto str = cast(const(ubyte)[])"Hello there, my name is Jeff.";
+	scope encodebuf = new char[encodedSize(str)];
+	char[] encoded = encode(str, encodebuf);
 
 	scope decodebuf = new ubyte[encoded.length];
 	assert(decode(encoded, decodebuf) == "Hello there, my name is Jeff.");
@@ -16,27 +16,25 @@ unittest {
 
 @nogc:
 
-/*
+/++
 	calculates and returns the size needed to encode the length of the
 	array passed.
 
 	Params:
 	data = An array that will be encoded
-*/
++/
+size_t encodedSize(in void[] data) => encodedSize(data.length);
 
-size_t encodedSize(in void[] data) @safe => encodedSize(data.length);
-
-/*
+/++
 	calculates and returns the size needed to encode the length passed.
 
 	Params:
 	length = Number of bytes to be encoded
-*/
-
-size_t encodedSize(size_t length) @safe
++/
+size_t encodedSize(size_t length)
 	=> (length + 2) / 3 * 4; // for every 3 bytes we need 4 bytes to encode, with any fraction needing an additional 4 bytes with padding
 
-/*
+/++
 	encodes data into buff and returns the number of bytes encoded.
 	this will not terminate and pad any "leftover" bytes, and will instead
 	only encode up to the highest number of bytes divisible by three.
@@ -47,9 +45,8 @@ size_t encodedSize(size_t length) @safe
 	data = what is to be encoded
 	buff = buffer large enough to hold encoded data
 	bytesEncoded = ref that returns how much of the buffer was filled
-*/
-
-size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) {
++/
+size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) @trusted {
 	size_t tripletCount = data.length / 3;
 	size_t rtn;
 	char* rtnPtr = buff.ptr;
@@ -70,7 +67,7 @@ size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) {
 	return rtn;
 }
 
-/*
+/++
 	encodes data and returns as an ASCII base64 string.
 
 	Params:data = what is to be encoded
@@ -82,9 +79,8 @@ size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) {
 	char[] encodedString = encode(cast(ubyte[])"Hello, how are you today?", encodebuf);
 	assert(encodedString == "SGVsbG8sIGhvdyBhcmUgeW91IHRvZGF5Pw==")
 	---
-*/
-
-char[] encode(const ubyte[] data, char[] buff)
++/
+char[] encode(const ubyte[] data, char[] buff) @trusted
 in (buff.length >= encodedSize(data)) {
 	size_t bytesEncoded;
 	size_t numBytes = encodeChunk(data, buff, bytesEncoded);
@@ -110,7 +106,7 @@ in (buff.length >= encodedSize(data)) {
 	return buff[0 .. (rtnPtr - buff.ptr)];
 }
 
-/*
+/++
 	decodes an ASCCI base64 string and returns it as ubyte[] data.
 
 	This decoder will ignore non-base64 characters. So:
@@ -130,9 +126,8 @@ in (buff.length >= encodedSize(data)) {
 	auto decodedString = cast(char[])decode("SGVsbG8sIGhvdyBhcmUgeW91IHRvZGF5Pw==", decodebuf);
 	Stdout(decodedString).newline; // Hello, how are you today?
 	---
-*/
-
-ubyte[] decode(const char[] data, ubyte[] buff) {
++/
+ubyte[] decode(const char[] data, ubyte[] buff) @trusted {
 	if (data.length) {
 		ubyte[4] base64Quad;
 		ubyte* quadPtr = base64Quad.ptr;

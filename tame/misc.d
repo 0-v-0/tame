@@ -49,9 +49,9 @@ int numDigits(T : ulong)(T num, uint radix = 10) @trusted {
 	}
 }
 
-/**
- * Match types like `std.typecons.Nullable` ie `mir.core.Nullable`
- */
+/++
+	Match types like `std.typecons.Nullable` ie `mir.core.Nullable`
++/
 template isStdNullable(T) {
 	T* aggregate;
 

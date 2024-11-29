@@ -196,11 +196,11 @@ unittest {
 }
 
 import core.thread : Fiber;
-import std.concurrency : Generator, yield;
 
 auto async(T)(T delegate() dg)
 if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K))
 in (dg) {
+	import std.concurrency : Generator;
 	return Promise!T((res, rej) {
 		static if (is(T == void)) {
 			alias value = Arg!T;
@@ -224,6 +224,8 @@ in (dg) {
 }
 
 T await(T)(Promise!T promise) {
+	import std.concurrency : yield;
+
 	yield(promise);
 
 	if (promise.isFulfilled) {
