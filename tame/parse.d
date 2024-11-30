@@ -265,7 +265,7 @@ void skipCharRanges(string cs)(ref const(char)* p) if (cs.length % 2 == 0) {
 
 	while (*p) {
 		bool found;
-		for (size_t i = 0; i < cs.length; i += 2) {
+		for (size_t i; i < cs.length; i += 2) {
 			if (cs[i] <= *p && cs[i + 1] >= *p) {
 				found = true;
 				break;

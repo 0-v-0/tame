@@ -20,7 +20,7 @@ Params:
 Returns:
 	The number of wide characters written to wbuf, or -1 if wbuf is too small.
 +/
-int toAnsi(in char[] utf8, scope wchar[] wbuf, scope char[] ansi) @trusted
+int toANSI(in char[] utf8, scope wchar[] wbuf, scope char[] ansi) @trusted
 in (utf8.length <= int.max, "input string too long") {
 
 	// Convert UTF-8 to wide char
@@ -65,9 +65,9 @@ in (utf8.length <= int.max, "input string too long") {
 unittest {
 	wchar[256] wbuf = void;
 	char[256] ansi = void;
-	assert("abc".toAnsi(wbuf, ansi) == 3);
+	assert("abc".toANSI(wbuf, ansi) == 3);
 	assert(ansi[0 .. 3] == "abc");
-	assert("中文".toAnsi(wbuf, ansi) == 4);
+	assert("中文".toANSI(wbuf, ansi) == 4);
 }
 
 /++
@@ -78,7 +78,7 @@ Params:
 Returns:
 	The number of bytes written to utf8, or -1 if utf8 is too small.
 +/
-int toUtf8(in wchar[] wStr, scope char[] utf8) @trusted
+int toUTF8(in wchar[] wStr, scope char[] utf8) @trusted
 in (wStr.length <= int.max, "input string too long") {
 	import core.sys.windows.windows;
 
@@ -105,7 +105,7 @@ in (wStr.length <= int.max, "input string too long") {
 
 unittest {
 	char[256] utf8 = void;
-	assert("abc".toUtf8(utf8) == 3);
+	assert("abc".toUTF8(utf8) == 3);
 	assert(utf8[0 .. 3] == "abc");
-	assert("中文".toUtf8(utf8) == 6);
+	assert("中文".toUTF8(utf8) == 6);
 }

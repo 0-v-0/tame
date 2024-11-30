@@ -7,7 +7,7 @@ version (Windows) {
 	import std.windows.syserror;
 
 	package alias errno = WSAGetLastError;
-} else version (Posix){
+} else version (Posix) {
 	import core.sys.posix.netdb;
 
 	package import core.stdc.errno : errno;
@@ -25,7 +25,7 @@ class SocketException : Exception {
 
 /+
 Needs to be public so that SocketOSException can be thrown outside of
-std.socket (since it uses it as a default argument), but it probably doesn't
+tame.net (since it uses it as a default argument), but it probably doesn't
 need to actually show up in the docs, since there's not really any public
 need for it outside of being a default argument.
 +/
@@ -45,14 +45,12 @@ string formatSocketError(int err) @trusted nothrow {
 		}
 
 		auto len = strlen(cs);
-
 		if (cs[len - 1] == '\n')
 			len--;
 		if (cs[len - 1] == '\r')
 			len--;
 		return cs[0 .. len].idup;
-	} else //version (Windows)
-		//{
+	} else //version (Windows) {
 		//	return generateSysErrorMsg(err);
 		//}
 		//else
@@ -100,11 +98,8 @@ nothrow:
 		int err = errno(),
 		Formatter errorFormatter = &formatSocketError) {
 		errorCode = err;
-
-		if (msg.length)
-			super(msg ~ ": " ~ errorFormatter(err), file, line, next);
-		else
-			super(errorFormatter(err), file, line, next);
+		super(msg.length ? msg ~ ": " ~ errorFormatter(err) : errorFormatter(err),
+			file, line, next);
 	}
 
 	///

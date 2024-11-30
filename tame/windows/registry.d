@@ -7,6 +7,7 @@ import core.sys.windows.winbase;
 import core.sys.windows.windef;
 import core.sys.windows.winreg;
 import tame.windows.charset;
+public import core.sys.windows.windef : HKEY;
 
 /// Enumeration of the recognised registry value types.
 enum RegValueType : DWORD {
@@ -62,28 +63,17 @@ enum REGSAM {
 
 nothrow @nogc:
 
-/**
-Returns the named sub-key of this key.
-
-Params:
-	name = The name of the subkey to aquire. If name is the empty
-			string, then the called key is duplicated.
-	access = The desired access; one of the `REGSAM` enumeration.
-Returns:
-	The aquired key.
-*/
-
-int tryOpen(in HKEY hkey, wstring subKey, out HKEY result, REGSAM samDesired = REGSAM.KEY_READ)
+int tryOpen(in HKEY hkey, in wchar[] subKey, out HKEY result, REGSAM samDesired = REGSAM.KEY_READ)
 in (hkey) {
 	return RegOpenKeyExW(hkey, subKey.ptr, 0, compatibleRegsam(samDesired), &result);
 }
 
-int tryQuery(in HKEY hkey, wstring name, wchar* data, ref uint len)
+int tryQuery(in HKEY hkey, in wchar[] name, wchar* data, ref uint len)
 in (hkey) {
 	DWORD type;
 	const res = RegQueryValueExW(hkey, name.ptr, null, &type, data, &len);
 
-	if (res == ERROR_SUCCESS) {
+	if (res == ERROR_SUCCESS && data) {
 		switch (type) {
 		case RegValueType.SZ:
 		case RegValueType.EXPAND_SZ:

@@ -20,7 +20,6 @@ nothrow @nogc:
 /+
 	Convert to lowercase in-place.
 +/
-
 T[] toLower(T)(T[] src) {
 	foreach (ref c; src)
 		if (c >= 'A' && c <= 'Z')
@@ -31,7 +30,6 @@ T[] toLower(T)(T[] src) {
 /+
 	Convert to uppercase in-place.
 +/
-
 T[] toUpper(T)(T[] src) {
 	foreach (ref c; src)
 		if (c >= 'a' && c <= 'z')
@@ -42,7 +40,6 @@ T[] toUpper(T)(T[] src) {
 /+
 	Compare two char[] ignoring case. Returns 0 if equal
 +/
-
 int icmp(in char[] s1, in char[] s2) @trusted {
 	if (s1.ptr && s2.ptr) {
 		const result = memicmp(s1.ptr, s2.ptr, s1.length > s2.length ? s2.length : s1.length);
@@ -55,7 +52,6 @@ int icmp(in char[] s1, in char[] s2) @trusted {
 /+
 	Compare two char[] with case. Returns 0 if equal
 +/
-
 auto cmp(in char[] s1, in char[] s2) @trusted {
 	if (s1.ptr && s2.ptr) {
 		const result = memcmp(s1.ptr, s2.ptr, s1.length > s2.length ? s2.length : s1.length);
@@ -105,7 +101,6 @@ private immutable char[] _caseMap = [
 	src.length upon failure.
 	This is a case-insensitive search (with thanks to Nietsnie)
 +/
-
 size_t isearch(in char[] src, in char[] pattern) {
 	if (src.length) {
 		const d = src.length - pattern.length;
