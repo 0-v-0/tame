@@ -72,7 +72,7 @@ unittest {
 /// Returns true if the least significant bit of the pointer is set.
 bool hasLSB(in void* p) => (cast(size_t)p & 1) != 0;
 
-bool hasLSB(in shared void* p) => (cast(size_t)p & 1) != 0;
+bool hasLSB(in shared void* p) => hasLSB(cast(void*)p);
 
 /// Sets the least significant bit of the pointer.
 T* setLSB(T)(T* p) => cast(T*)(cast(size_t)p | 1);

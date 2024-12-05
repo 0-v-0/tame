@@ -1,15 +1,16 @@
-module tame.fixed.map;
+module tame.fixed.set;
+
+import tame.fixed.map;
 
 @safe pure nothrow @nogc:
 
-struct Map(K, V, size_t N = 16, alias hasher = hashOf) {
+struct Set(T, size_t N = 16, alias hasher = hashOf) {
 	static assert(!((N - 1) & N), "N must be 0 or a power of 2");
 pure:
 	struct Bucket {
 	private:
 		size_t hash;
-		K key;
-		V val;
+		T val;
 
 		@property bool empty() const => hash == Hash.empty;
 
@@ -23,7 +24,7 @@ pure:
 		uint used;
 		uint deleted;
 
-		size_t calcHash(in K pkey) {
+		size_t calcHash(in T pkey) {
 			// highest bit is set to distinguish empty/deleted from filled buckets
 			const hash = hasher(pkey);
 			return mix(hash) | Hash.filled;
@@ -37,10 +38,10 @@ pure:
 			}
 		}
 
-		inout(Bucket)* findSlotLookup(size_t hash, in K key) inout {
+		inout(Bucket)* findSlotLookup(size_t hash, in T val) inout {
 			size_t n;
 			for (size_t i = hash & mask; n < buckets.length; ++n) {
-				if (buckets[i].hash == hash && key == buckets[i].key)
+				if (buckets[i].hash == hash && val == buckets[i].val)
 					return &buckets[i];
 				i = (i + 1) & mask;
 			}
@@ -61,17 +62,15 @@ pure:
 		bool full() const => length == buckets.length;
 	}
 
-	bool set(in K key, V val) {
+	bool add(in T val) {
 		if (length == N)
 			return false;
 
-		const keyHash = calcHash(key);
-		if (auto p = findSlotLookup(keyHash, key)) {
-			p.val = val;
-			return true;
-		}
+		const hash = calcHash(val);
+		if (auto p = findSlotLookup(hash, val))
+			return false;
 
-		auto p = findSlotInsert(keyHash);
+		auto p = findSlotInsert(hash);
 		if (p.deleted)
 			--deleted;
 
@@ -79,18 +78,17 @@ pure:
 		else if (++used > capacity)
 			return false;
 
-		p.hash = keyHash;
-		p.key = key;
+		p.hash = hash;
 		p.val = val;
 		return true;
 	}
 
-	bool remove(in K key) {
+	bool remove(in T val) {
 		if (!length)
 			return false;
 
-		const hash = calcHash(key);
-		if (auto p = findSlotLookup(hash, key)) {
+		const hash = calcHash(val);
+		if (auto p = findSlotLookup(hash, val)) {
 			// clear entry
 			p.hash = Hash.deleted;
 			// just mark it to be disposed
@@ -106,67 +104,40 @@ pure:
 		buckets[] = Bucket.init;
 	}
 
-	V* opBinaryRight(string op : "in")(in K key) {
+	T* opBinaryRight(string op : "in")(in T val) {
 		if (!length)
 			return null;
 
-		const keyHash = calcHash(key);
-		if (auto p = findSlotLookup(keyHash, key))
+		const keyHash = calcHash(val);
+		if (auto p = findSlotLookup(keyHash, val))
 			return &p.val;
 		return null;
 	}
 
-	V get(in K key) {
-		if (auto ret = key in this)
-			return *ret;
-		return V.init;
-	}
-
-	alias opIndex = get;
-
-	void opIndexAssign(V value, in K key) {
-		set(key, value);
-	}
+	bool has(in T val) => (val in this) !is null;
 }
 
 unittest {
-	Map!(int, int, 4) m;
-	assert(m.empty);
-	assert(m.set(1, 2));
-	assert(m.set(2, 3));
-	assert(m.set(3, 4));
-	assert(m.length == 3);
-	assert(m.set(4, 5));
-	assert(m.length == 4);
-	assert(!m.set(5, 6));
-	assert(m.length == 4);
-	assert(m.remove(2));
-	assert(m.length == 3);
-	assert(m.set(5, 6));
-	assert(m.length == 4);
-	assert(m.remove(5));
-	assert(m.length == 3);
+	Set!(int, 4) s;
+	assert(s.empty);
+	assert(s.add(1));
+	assert(s.add(2));
+	assert(!s.add(2));
+	assert(s.add(3));
+	assert(s.length == 3);
+	assert(s.add(4));
+	assert(s.length == 4);
+	assert(!s.add(5));
+	assert(s.length == 4);
+	assert(s.remove(2));
+	assert(s.length == 3);
+	assert(s.add(5));
+	assert(s.length == 4);
+	assert(s.remove(5));
+	assert(s.length == 3);
 }
 
 unittest {
-	Map!(int, int, 0) m;
-	assert(m.empty);
-}
-
-package:
-size_t mix(size_t h) {
-	enum m = 0x5bd1e995;
-	h ^= h >> 13;
-	h *= m;
-	h ^= h >> 15;
-	return h;
-}
-
-enum INIT_NUM_BUCKETS = 8;
-
-/// magic hash constants to distinguish empty, deleted, and filled buckets
-enum Hash : size_t {
-	empty = 0,
-	deleted = 0x1,
-	filled = size_t(1) << 8 * size_t.sizeof - 1,
+	Set!(int, 0) s;
+	assert(s.empty);
 }

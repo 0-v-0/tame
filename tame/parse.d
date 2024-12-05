@@ -111,11 +111,11 @@ uint hexDecode4(ref const(char)* hex) pure {
 inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @trusted {
 	foreach (i; 0 .. 4) {
 		result *= 16;
-		char ch = cast(char)(hex[i] - '0');
+		int ch = hex[i] - '0';
 		if (ch <= 9) {
 			result += ch;
 		} else {
-			ch = cast(char)((ch | 0x20) - 0x31);
+			ch = (ch | 0x20) - 0x31;
 			if (ch <= 5)
 				result += ch + 10;
 			else

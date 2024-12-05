@@ -135,7 +135,7 @@ results = getAddrInfo("::1", AddrInfoFlags.numericHost);
 assert(!results.empty && results.front.family == AddrFamily.IPv6);
 ---
 +/
-auto getAddrInfo(A...)(scope const(char)[] node, scope A options) {
+auto getAddrInfo(A...)(in char[] node, scope A options) {
 	const(char)[] service = null;
 	addrinfo hints;
 	hints.ai_family = AF_UNSPEC;
@@ -224,7 +224,7 @@ pure:
 	}
 }
 
-private auto getAddressInfoImpl(scope const(char)[] node, scope const(char)[] service, addrinfo* hints) @system {
+private auto getAddressInfoImpl(in char[] node, in char[] service, addrinfo* hints) @system {
 	addrinfo* res = void;
 	char[NI_MAXHOST] nbuf = void;
 	if (node.length)
@@ -306,7 +306,7 @@ catch (SocketException e)
     writefln("  Lookup failed: %s", e.msg);
 ---
 +/
-auto getAddress(scope const(char)[] hostname, scope const(char)[] service = null) {
+auto getAddress(in char[] hostname, in char[] service = null) {
 	return AddressList(getAddrInfo(hostname, service));
 }
 
@@ -350,7 +350,7 @@ try {
 }
 ---
 +/
-auto parseAddress(scope const(char)[] host, scope const(char)[] service = null) {
+auto parseAddress(in char[] host, in char[] service = null) {
 	auto info = getAddrInfo(host, service, AddrInfoFlags.numericHost);
 	return info.front.address;
 }
@@ -440,15 +440,29 @@ struct Address {
 		return fromStringz(buf.ptr).idup;
 	}
 
-	string toString() const nothrow {
+	void toString(R)(R r) const {
 		try {
-			string host = toAddrString();
-			string port = toPortString();
-			if (host.indexOf(':') >= 0)
-				return "[" ~ host ~ "]:" ~ port;
-			return host ~ ":" ~ port;
-		} catch (Exception)
-			return "Unknown";
+			const host = toAddrString();
+			const port = toPortString();
+			if (host.indexOf(':') >= 0) {
+				r ~= '[';
+				r ~= host;
+				r ~= "]:";
+			} else {
+				r ~= host;
+				r ~= ':';
+			}
+			r ~= port;
+		} catch (Exception) {
+		}
+	}
+
+	string toString() const nothrow {
+		import std.array : appender;
+
+		auto app = appender!string;
+		toString(app);
+		return app[];
 	}
 
 pure nothrow @nogc:
@@ -479,7 +493,7 @@ struct IPv4Addr {
 		addr = an IPv4 address string in the dotted-decimal form a.b.c.d.
 		port = port number, may be `anyPort`.
 	+/
-	this(scope const(char)[] addr, ushort port) {
+	this(in char[] addr, ushort port) {
 		sin.sin_family = AddrFamily.IPv4;
 		sin.sin_addr.s_addr = htonl(parse(addr));
 		sin.sin_port = htons(port);
@@ -522,7 +536,7 @@ nothrow @nogc:
 	Params:
 		addr = A sockaddr_in as obtained from lower-level API calls such as getifaddrs.
 	+/
-	this(sockaddr_in addr) pure
+	this(in sockaddr_in addr) pure
 	in (addr.sin_family == AddrFamily.IPv4, "Socket address is not of IPv4 family.") {
 		sin = addr;
 	}
@@ -533,7 +547,7 @@ nothrow @nogc:
 	Returns: If the string is not a legitimate IPv4 address,
 	`ADDR_NONE` is returned.
 	+/
-	static uint parse(scope const(char)[] addr) @trusted {
+	static uint parse(in char[] addr) @trusted {
 		if (addr.length > 15)
 			return none;
 
@@ -592,17 +606,15 @@ struct IPv6Addr {
 		addr = an IPv6 address string in the colon-separated form a:b:c:d:e:f:g:h.
 		port = port number, may be `anyPort`.
 	+/
-	this(scope const(char)[] addr, ushort port = anyPort) {
-		sin6.sin6_family = AddrFamily.IPv6;
-		sin6.sin6_port = htons(port);
-		sin6.sin6_addr = in6_addr(s6_addr : parse(addr));
+	this(in char[] addr, ushort port = anyPort) {
+		this(parse(addr), port);
 	}
 
 	/++
 	Parse an IPv6 host address string as described in RFC 2373, and return the
 	address.
 	+/
-	static ubyte[16] parse(scope const(char)[] addr) @trusted {
+	static ubyte[16] parse(in char[] addr) @trusted {
 		// Although we could use inet_pton here, it's only available on Windows
 		// versions starting with Vista, so use getAddrInfo with numericHost
 		// instead.
@@ -617,9 +629,9 @@ pure nothrow @nogc:
 	/++
 	Construct a new `IPv6Addr`.
 	Params:
-	  addr = A sockaddr_in6 as obtained from lower-level API calls such as getifaddrs.
+		addr = A sockaddr_in6 as obtained from lower-level API calls such as getifaddrs.
 	+/
-	this(sockaddr_in6 addr)
+	this(in sockaddr_in6 addr)
 	in (addr.sin6_family == AddrFamily.IPv6, "Socket address is not of IPv6 family.") {
 		sin6 = addr;
 	}
@@ -627,21 +639,18 @@ pure nothrow @nogc:
 	/++
 	Construct a new `IPv6Addr`.
 	Params:
-	  addr = (optional) an IPv6 host address in host byte order, or
-	         `ADDR_ANY`.
-	  port = port number, may be `anyPort`.
+		addr = (optional) an IPv6 host address in host byte order, or `ADDR_ANY`.
+		port = port number, may be `anyPort`.
 	+/
 	this(in ubyte[16] addr, ushort port) {
 		sin6.sin6_family = AddrFamily.IPv6;
-		sin6.sin6_addr.s6_addr = addr;
 		sin6.sin6_port = htons(port);
+		sin6.sin6_addr.s6_addr = addr;
 	}
 
 	/// ditto
 	this(ushort port) {
-		sin6.sin6_family = AddrFamily.IPv6;
-		sin6.sin6_addr.s6_addr = any;
-		sin6.sin6_port = htons(port);
+		this(any, port);
 	}
 
 @property:
@@ -649,11 +658,8 @@ pure nothrow @nogc:
 	/// Any IPv6 host address.
 	static ref const(ubyte)[16] any() {
 		static if (is(typeof(IN6ADDR_ANY))) {
-			version (Windows) {
-				static immutable addr = IN6ADDR_ANY.s6_addr;
-				return addr;
-			} else
-				return IN6ADDR_ANY.s6_addr;
+			static immutable addr = IN6ADDR_ANY.s6_addr;
+			return addr;
 		} else static if (is(typeof(in6addr_any)))
 			return in6addr_any.s6_addr;
 		else
@@ -663,17 +669,13 @@ pure nothrow @nogc:
 	/// The IPv6 loopback address.
 	static ref const(ubyte)[16] loopback() {
 		static if (is(typeof(IN6ADDR_LOOPBACK))) {
-			version (Windows) {
-				static immutable addr = IN6ADDR_LOOPBACK.s6_addr;
-				return addr;
-			} else
-				return IN6ADDR_LOOPBACK.s6_addr;
+			static immutable addr = IN6ADDR_LOOPBACK.s6_addr;
+			return addr;
 		} else static if (is(typeof(in6addr_loopback)))
 			return in6addr_loopback.s6_addr;
 		else
 			static assert(0);
 	}
-
 	/// Returns the IPv6 port number.
 	ushort port() const => ntohs(sin6.sin6_port);
 
@@ -691,14 +693,7 @@ unittest {
 	});
 
 	softUnittest({
-		// test construction from a sockaddr_in6
-		sockaddr_in6 sin;
-
-		sin.sin6_addr.s6_addr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]; // [::1]
-		sin.sin6_family = AddrFamily.IPv6;
-		sin.sin6_port = htons(80);
-
-		const ia = IPv6Addr(sin);
+		const ia = IPv6Addr(IPv6Addr.loopback, 80);
 		assert(ia.toString() == "[::1]:80");
 	});
 }
@@ -715,7 +710,7 @@ static if (is(sockaddr_un)) {
 		Params:
 			path = a string containing the path to the Unix domain socket.
 		+/
-		this(scope const(char)[] path) @trusted pure {
+		this(in char[] path) @trusted pure {
 			enforce(path.length <= sun.sun_path.sizeof, new SocketParamException(
 					"Path too long"));
 			sun.sun_family = AddrFamily.UNIX;
@@ -737,7 +732,7 @@ static if (is(sockaddr_un)) {
 		Params:
 		  addr = a sockaddr_un as obtained from lower-level API calls such as getifaddrs.
 		+/
-		this(sockaddr_un addr)
+		this(in sockaddr_un addr)
 		in (addr.sun_family == AddrFamily.UNIX, "Socket address is not of UNIX family.") {
 			sun = addr;
 		}

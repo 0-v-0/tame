@@ -13,40 +13,40 @@ will be at either the front or the back of the result string.
 +/
 struct SlugRange(R) if (isInputRange!R && is(typeof(R.init.front) == dchar)) {
 	this(R input) {
-		_input = input;
+		r = input;
 		skipNonAlphaNum();
 	}
 
 	@property {
-		bool empty() const => !_dash && _input.empty;
+		bool empty() const => !dash && r.empty;
 
-		auto front() const => _dash ? '-' : toLower(_input.front);
+		auto front() const => dash ? '-' : toLower(r.front);
 	}
 
 	void popFront() {
-		if (_dash) {
-			_dash = false;
+		if (dash) {
+			dash = false;
 			return;
 		}
 
-		_input.popFront();
-		if (skipNonAlphaNum() && !_input.empty)
-			_dash = true;
+		r.popFront();
+		if (skipNonAlphaNum() && !r.empty)
+			dash = true;
 	}
 
 private:
-	R _input;
-	bool _dash;
+	R r;
+	bool dash;
 
 	bool skipNonAlphaNum() {
 		import std.ascii;
 
 		bool skip;
-		while (!_input.empty) {
-			auto c = _input.front;
+		while (!r.empty) {
+			auto c = r.front;
 			if (isAlphaNum(c))
 				return skip;
-			_input.popFront();
+			r.popFront();
 			skip = true;
 		}
 		return skip;

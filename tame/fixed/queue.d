@@ -8,13 +8,8 @@ import std.algorithm : swap;
 struct Queue(T, uint N = 16) {
 	enum capacity = N;
 
-	T[N] data;
-	uint head;
-	uint tail;
-
 	void push(T value)
 	in (!full, "Queue is full") {
-
 		data[tail++] = value;
 		tail %= N;
 	}
@@ -29,8 +24,14 @@ struct Queue(T, uint N = 16) {
 	@property {
 		bool empty() const => head == tail;
 		bool full() const => (tail + 1) % N == head;
-		ref front() => data[head];
+		uint size() const => tail >= head ? tail - head : N - head + tail;
+		ref front()
+		in (!empty) => data[head];
 	}
+
+private:
+	T[N] data;
+	uint head, tail;
 }
 
 unittest {
@@ -39,14 +40,13 @@ unittest {
 	q.push(1);
 	assert(!q.empty);
 	q.push(2);
+	assert(q.size == 2);
 	assert(q.pop() == 1);
 	assert(q.pop() == 2);
 }
 
 struct PriorityQueue(T, uint N = 16) {
 	enum capacity = N;
-	T[N] data;
-	uint size;
 
 	@property {
 		bool empty() const => size == 0;
@@ -89,6 +89,10 @@ struct PriorityQueue(T, uint N = 16) {
 		}
 		return value;
 	}
+
+private:
+	T[N] data;
+	uint size;
 }
 
 unittest {
