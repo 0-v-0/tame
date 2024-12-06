@@ -53,7 +53,7 @@ private:
 	}
 }
 
-auto asSlug(R)(R text) => SlugRange!R(text);
+auto asSlug(R)(R s) => SlugRange!R(s);
 
 unittest {
 	import std.algorithm : equal;

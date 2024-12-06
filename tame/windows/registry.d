@@ -79,7 +79,7 @@ in (hkey) {
 		case RegValueType.EXPAND_SZ:
 			debug {
 				auto ws = (cast(immutable(wchar)*)data)[0 .. len / wchar.sizeof];
-				assert(ws.length > 0 && ws[$ - 1] == '\0');
+				assert(ws.length && ws[$ - 1] == '\0');
 				if (ws.length && ws[$ - 1] == '\0')
 					ws.length = ws.length - 1;
 				assert(ws.length == 0 || ws[$ - 1] != '\0');

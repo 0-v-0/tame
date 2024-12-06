@@ -20,8 +20,6 @@ maxLen = The maximum length of the string, including the null terminator.
 
 Example:
 ---
-import wad.stackcstr;
-
 void main() {
 	CStr!100 s;
 	s ~= "Hello";
@@ -33,7 +31,7 @@ void main() {
 +/
 struct CStr(uint maxLen = 256) {
 	size_t length;
-	char[maxLen] buf = [0];
+	private char[maxLen] buf = [0];
 
 	this(char ch) {
 		buf[0] = ch;

@@ -757,7 +757,7 @@ static if (is(sockaddr_un)) {
 			// length on iOS derived platforms. Due to the sandbox, the length
 			// of paths can quickly become too long.
 			static string deleteme() {
-				import std.conv : text;
+				import tame.format : text;
 				import std.process : thisProcessID;
 				import std.file : tempDir;
 

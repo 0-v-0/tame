@@ -635,7 +635,7 @@ public:
 				"Timeout duration must not be negative."));
 
 		version (Windows) {
-			import std.algorithm.comparison : max;
+			import std.algorithm : max;
 
 			int msecs = cast(int)value.total!"msecs";
 			if (msecs != 0 && option == SocketOption.rcvtimeo)

@@ -20,6 +20,8 @@ pure:
 	}
 
 	private {
+		enum mask = N - 1;
+
 		Bucket[N] buckets;
 		uint used;
 		uint deleted;
@@ -48,8 +50,6 @@ pure:
 			return null;
 		}
 	}
-
-	enum mask = N - 1;
 
 	enum capacity = buckets.length;
 

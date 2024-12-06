@@ -49,25 +49,11 @@ version (D_BetterC) {
 
 @safe:
 
-private template isUUID(T) {
+private template isTyp(T, U) {
 	version (D_BetterC)
-		enum isUUID = false;
+		enum isTyp = false;
 	else
-		enum isUUID = is(T == UUID);
-}
-
-private template isSysTime(T) {
-	version (D_BetterC)
-		enum isSysTime = false;
-	else
-		enum isSysTime = is(T == SysTime);
-}
-
-private template isDuration(T) {
-	version (D_BetterC)
-		enum isDuration = false;
-	else
-		enum isDuration = is(T == Duration);
+		enum isTyp = is(T == U);
 }
 
 /**
@@ -151,19 +137,19 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 						advance(s.nogcFormatTo!"%s(%d)"(U.stringof, val));
 					else
 						write(tmp);
-				} else static if (isUUID!U)
+				} else static if (isTyp!(U, UUID))
 					advance(s.formatUUID(val));
-				else static if (isSysTime!U)
+				else static if (isTyp!(U, SysTime))
 					advance(s.formatSysTime(val));
 				else static if (is(U == TimeOfDay))
 					advance(s.nogcFormatTo!"%02d:%02d:%02d"(val.hour, val.minute, val.second));
-				else static if (isDuration!U)
+				else static if (isTyp!(U, Duration))
 					advance(s.formatDuration(val));
 				else static if (isArray!U || isInputRange!U) {
-					if (!val.empty)
-						advance(s.nogcFormatTo!"[%(%s%|, %)]"(val));
-					else
+					if (val.empty)
 						write("[]");
+					else
+						advance(s.nogcFormatTo!"[%(%s%|, %)]"(val));
 				} else static if (isPointer!U) {
 					static if (is(typeof(*U)) && isSomeChar!(typeof(*U))) {
 						// NOTE: not safe, we can only trust that the provided char pointer is really stringz
@@ -434,6 +420,12 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 }
 
 string text(T...)(auto ref T args) @trusted if (T.length) {
+	if (__ctfe) {
+		StringSink s;
+		foreach (arg; args)
+			nogcFormatTo(s, arg);
+		return cast(string)s.data;
+	}
 	static StringSink s;
 	s.clear();
 	foreach (arg; args)
@@ -444,6 +436,7 @@ string text(T...)(auto ref T args) @trusted if (T.length) {
 ///
 unittest {
 	assert(text(42, ' ', 1.5, ": xyz") == "42 1.5: xyz");
+	static assert(text(42, ' ', 1.5, ": xyz") == "42 1.5: xyz", text(42, ' ', 1.5, ": xyz"));
 }
 
 unittest {
@@ -986,15 +979,12 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 			if (val < 0)
 				buf[i++] = '-';
 
-		if (v == 0)
-			buf[i++] = '0';
-		else {
+		if (v) {
 			i = len;
-			while (v) {
-				buf[--i] = "0123456789"[v % 10];
-				v /= 10;
-			}
-		}
+			for (; v; v /= 10)
+				buf[--i] = cast(char)('0' ^ v % 10);
+		} else
+			buf[i++] = '0';
 
 		write(buf[0 .. len]);
 		return len;
@@ -1017,6 +1007,39 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 }
 
 size_t formatFloat(S)(auto ref scope S sink, double val) @trusted {
+	if (__ctfe) {
+		mixin SinkWriter!S;
+		if (val != val) {
+			write("nan");
+			return 3;
+		}
+		size_t len;
+		if (val < 0) {
+			write('-');
+			len++;
+			val = -val;
+		}
+		if (val == double.infinity) {
+			write("inf");
+			return len + 3;
+		}
+		const intPart = cast(long)val;
+		auto fracPart = val - intPart;
+		len += sink.formatDecimal(intPart);
+		if (fracPart > 0) {
+			write('.');
+			len++;
+			do {
+				fracPart *= 10;
+				const digit = cast(long)fracPart;
+				write(cast(char)('0' + digit));
+				len++;
+				fracPart -= digit;
+			}
+			while (fracPart > 0);
+		}
+		return len;
+	}
 	import core.stdc.stdio : snprintf;
 
 	char[20] buf = void;
@@ -1228,7 +1251,7 @@ size_t formatDuration(S)(auto ref scope S sink, Duration val) {
 
 	long totalHNS = __traits(getMember, val, "_hnsecs"); // access private member
 	if (totalHNS < 0) {
-		write("-");
+		write('-');
 		totalHNS = -totalHNS;
 	}
 
@@ -1378,7 +1401,7 @@ private auto sinkWrap(S)(auto ref scope S sink) @trusted // we're only using thi
 }
 
 // helper functions used in formatters to write formatted string to sink
-private mixin template SinkWriter(S, bool field = true) {
+private template SinkWriter(S, bool field = true) {
 	size_t totalLen;
 	static if (isArray!S && is(ForeachType!S : char)) {
 		static if (field)
