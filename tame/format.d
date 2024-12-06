@@ -28,7 +28,9 @@ std.range,
 tame.buffer,
 tame.builtins,
 tame.misc;
-import std.algorithm : among, canFind, max, min;
+import std.range : isForwardRange, isInputRange;
+import tame.string : canFind, indexOf;
+import std.algorithm : among, max, min;
 import std.datetime.date : TimeOfDay;
 import std.traits : EnumMembers, FieldNameTuple, ForeachType, hasMember,
 	isArray, isPointer, isSigned, isSomeChar, isStaticArray,
@@ -56,7 +58,7 @@ private template isTyp(T, U) {
 		enum isTyp = is(T == U);
 }
 
-/**
+/++
 Formats values to with fmt template into provided sink.
 Note: it supports only a basic subset of format type specifiers, main usage is for nogc logging
 and error messages formatting. But more cases can be added as needed.
@@ -69,7 +71,7 @@ Params:
 	args = The arguments to fill the format string with
 
 Returns: the length of the formatted string.
- */
++/
 size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args args) {
 	// TODO: not pure because of float formatter
 	alias sfmt = splitFmt!fmt;
@@ -81,9 +83,8 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 	foreach (tok; sfmt.tokens) {
 		// pragma(msg, "tok: ", tok);
 		static if (is(typeof(tok) == string)) {
-			static if (tok.length > 0) {
-				write(tok);
-			}
+			static if (tok.length)
+				put(tok);
 		} else static if (is(typeof(tok) == ArrFmtSpec)) {
 			enum j = tok.idx;
 			alias T = Unqual!(Args[j]);
@@ -107,7 +108,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 					if (unlikely(first))
 						first = false;
 					else
-						write(tok.del);
+						put(tok.del);
 				}
 				advance(s.nogcFormatTo!(tok.fmt)(e));
 			}
@@ -120,23 +121,23 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 
 			static if (isStdNullable!U) {
 				if (val.isNull)
-					write("null");
+					put("null");
 				else
 					advance(s.nogcFormatTo(val.get));
 			} else static if (f == FMT.STR) {
 				static if ((isArray!U && is(Unqual!(ForeachType!U) == char)))
-					write(val[]);
+					put(val[]);
 				else static if (isInputRange!U && isSomeChar!(ElementEncodingType!U)) {
 					foreach (c; val.byUTF!char)
-						write(c);
+						put(c);
 				} else static if (is(U == bool))
-					write(val ? "true" : "false");
+					put(val ? "true" : "false");
 				else static if (is(U == enum)) {
 					auto tmp = enumToStr(val);
 					if (unlikely(tmp is null))
 						advance(s.nogcFormatTo!"%s(%d)"(U.stringof, val));
 					else
-						write(tmp);
+						put(tmp);
 				} else static if (isTyp!(U, UUID))
 					advance(s.formatUUID(val));
 				else static if (isTyp!(U, SysTime))
@@ -147,7 +148,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 					advance(s.formatDuration(val));
 				else static if (isArray!U || isInputRange!U) {
 					if (val.empty)
-						write("[]");
+						put("[]");
 					else
 						advance(s.nogcFormatTo!"[%(%s%|, %)]"(val));
 				} else static if (isPointer!U) {
@@ -158,28 +159,28 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 							while (val[i] != '\0')
 								++i;
 							if (i)
-								write(val[0 .. i]);
+								put(val[0 .. i]);
 						}();
 					} else
 						advance(s.formatPtr(val));
 				} else static if (is(U == char))
-					write(val);
+					put(val);
 				else static if (isSomeChar!U) {
 					foreach (c; val.only.byUTF!char)
-						write(c);
+						put(c);
 				} else static if (is(U : ulong))
 					advance(s.formatDecimal(val));
 				else static if (isTuple!U) {
-					write("Tuple(");
+					put("Tuple(");
 					foreach (i, _; U.Types) {
 						static if (U.fieldNames[i] == "")
 							enum prefix = i == 0 ? "" : ", ";
 						else
 							enum prefix = (i == 0 ? "" : ", ") ~ U.fieldNames[i] ~ "=";
-						write(prefix);
+						put(prefix);
 						advance(s.nogcFormatTo(val[i]));
 					}
-					write(")");
+					put(')');
 				} else static if (is(U : Throwable)) {
 					advance(s.nogcFormatTo!"%s@%s(%d): %s"(
 							typeid(val)
@@ -200,16 +201,16 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 							pragma(msg, U.stringof ~ " has toString defined, but can't be used with nogcFormatter");
 						{
 							enum Prefix = U.stringof ~ "(";
-							write(Prefix);
+							put(Prefix);
 						}
 						alias Names = FieldNameTuple!U;
 						foreach (i, field; val.tupleof) {
 							enum string Name = Names[i];
 							enum Prefix = (i == 0 ? "" : ", ") ~ Name ~ "=";
-							write(Prefix);
+							put(Prefix);
 							advance(s.nogcFormatTo(field));
 						}
-						write(")");
+						put(')');
 					}
 				} else static if (is(U : double))
 					advance(s.nogcFormatTo!"%g"(val));
@@ -231,7 +232,7 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 				enum u = f == FMT.HEX ? Upper.yes : Upper.no;
 				enum fs = formatSpec(f, tok.def);
 				static if (isPointer!U)
-					advance(s.formatHex!(fs.width, fs.fill, u)(cast(ptrdiff_t)val));
+					advance(s.formatHex!(fs.width, fs.fill, u)(cast(size_t)val));
 				else
 					advance(s.formatHex!(fs.width, fs.fill, u)(val));
 			} else static if (f == FMT.PTR) {
@@ -252,17 +253,16 @@ size_t nogcFormatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Ar
 
 ///
 @"combined"@nogc unittest {
-	char[100] buf;
+	char[64] buf;
 	ubyte[3] data = [1, 2, 3];
-	immutable ret = nogcFormatTo!"hello %s %s %% world %d %x %p"(buf, data, "moshe", -567, 7, 7);
-	assert(ret == 53);
-	assert(buf[0 .. 53] == "hello [1, 2, 3] moshe % world -567 7 0000000000000007");
+	assert(nogcFormatTo!"hello %s %s %% world %d %x %p"(buf, data, "moshe", -567, 7, 7) == 53);
+	assert(buf[0 .. 53] == "hello [1, 2, 3] moshe % world -567 7 0000000000000007", buf[0 .. 53]);
 }
 
-/**
+/++
 	Same as `nogcFormatTo`, but it internally uses static malloc buffer to write formatted string to.
 	So be careful that next call replaces internal buffer data and previous result isn't valid anymore.
- */
++/
 const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 	static StringSink str;
 	str.clear();
@@ -319,7 +319,7 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) {
 	char[4] str = "foo\0";
 	assert((() => nogcFormat(str.ptr))() == "foo");
 
-	static if (is(typeof(UUID)))
+	static if (is(UUID))
 		assert(nogcFormat(
 				UUID([
 				138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189,
@@ -491,7 +491,7 @@ struct FmtParams {
 	int prec; // precision, if -1, use previous argument as precision value
 }
 
-bool isDigit()(char c)
+bool isDigit(char c)
 	=> c >= '0' && c <= '9';
 
 struct FmtSpec {
@@ -521,7 +521,7 @@ public:
 //     '%(' FormatString '%)'
 //     '%-(' FormatString '%)'
 //
-auto formatSpec()(FMT f, string spec) {
+auto formatSpec(FMT f, string spec) {
 	FmtParams res;
 	int i;
 
@@ -678,14 +678,6 @@ private long getNestedArrayFmtLen()(string fmt) {
 	static assert(getNestedArrayFmtLen("%(%d%)%)foo") == 8);
 }
 
-// workaround for std.string.indexOf not working in betterC
-private ptrdiff_t indexOf()(string fmt, char c) {
-	for (ptrdiff_t i; i < fmt.length; ++i)
-		if (fmt[i] == c)
-			return i;
-	return -1;
-}
-
 // Phobos version has bug in CTFE, see: https://issues.dlang.org/show_bug.cgi?id=20783
 private ptrdiff_t fixedLastIndexOf()(string s, string sub) {
 	if (!__ctfe)
@@ -740,8 +732,6 @@ private template getNestedArrayFmt(string fmt) {
 }
 
 @"getNestedArrayFmt"unittest {
-	import std.meta : AliasSeq;
-
 	static assert(getNestedArrayFmt!"%d " == AliasSeq!("%d", " "));
 	static assert(getNestedArrayFmt!"%d %|, " == AliasSeq!("%d ", ", "));
 	static assert(getNestedArrayFmt!"%(%d %|, %)" == AliasSeq!("%(%d %|, %)", ""));
@@ -749,11 +739,11 @@ private template getNestedArrayFmt(string fmt) {
 	static assert(getNestedArrayFmt!"foo%(%d %|, %)-%|;" == AliasSeq!("foo%(%d %|, %)-", ";"));
 }
 
-/**
+/++
 	Splits format string based on the same rules as described here: https://dlang.org/phobos/std_format.html
 	In addition it supports 'p' as a pointer format specifier to be more compatible with `printf`.
 	It supports nested arrays format specifier too.
- */
++/
 template splitFmt(string fmt) {
 	enum spec(int j, FMT f, string def) = FmtSpec(j, f, def);
 
@@ -764,69 +754,66 @@ template splitFmt(string fmt) {
 		static if (i < 0) {
 			enum helper = AliasSeq!(fmt[from .. $]);
 		} else {
-			enum idx1 = i + from;
-			static if (idx1 + 1 >= fmt.length)
-				static assert(0, "Expected formatter after %");
-			else {
-				enum idx2 = idx1 + getNextNonDigitFrom(fmt[idx1 + 1 .. $]);
-				// pragma(msg, "fmt: ", fmt[from .. idx2]);
-				static if (fmt[idx2 + 1] == 's')
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.STR, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'c')
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.CHR, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'b') // TODO: should be binary, but use hex for now
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.HEX, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1].among('d', 'u'))
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.DEC, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'o') // TODO: should be octal, but use hex for now
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.DEC, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'x')
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.HEX, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'X')
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.UHEX, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1].among('e', 'E', 'f', 'F', 'g', 'G', 'a', 'A')) // TODO: float number formatters
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.FLT, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == 'p')
-					enum helper = AliasSeq!(fmt[from .. idx1], spec!(j, FMT.PTR, fmt[idx1 + 1 .. idx2 + 1]), helper!(
-								idx2 + 2, j + 1));
-				else static if (fmt[idx2 + 1] == '%')
-					enum helper = AliasSeq!(fmt[from .. idx1 + 1], helper!(idx2 + 2, j));
-				else static if (fmt[idx2 + 1] == '(' || fmt[idx2 + 1 .. idx2 + 3] == "-(") {
-					// nested array format specifier
-					enum l = fmt[idx2 + 1] == '('
-						? getNestedArrayFmtLen(fmt[idx2 + 2 .. $]) : getNestedArrayFmtLen(
-							fmt[idx2 + 3 .. $]);
-					alias naSpec = getNestedArrayFmt!(fmt[idx2 + 2 .. idx2 + 2 + l - 2]);
-					// pragma(msg, fmt[from .. idx1], "|", naSpec[0], "|", naSpec[1], "|");
-					enum helper = AliasSeq!(
-							fmt[from .. idx1],
-							arrSpec!(j, naSpec[0], naSpec[1], fmt[idx2 + 1] != '('),
-							helper!(idx2 + 2 + l, j + 1));
-				} else
-					static assert(0, "Invalid formatter '" ~ fmt[idx2 + 1] ~ "' in fmt='" ~ fmt ~ "'");
-			}
+			enum i1 = i + from;
+			static assert(i1 + 1 < fmt.length, "Expected formatter after %");
+			enum i2 = i1 + getNextNonDigitFrom(fmt[i1 + 1 .. $]);
+			// pragma(msg, "fmt: ", fmt[from .. idx2]);
+			static if (fmt[i2 + 1] == 's')
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.STR, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'c')
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.CHR, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'b') // TODO: should be binary, but use hex for now
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1].among('d', 'u'))
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'o') // TODO: should be octal, but use hex for now
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'x')
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'X')
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.UHEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1].among('e', 'E', 'f', 'F', 'g', 'G', 'a', 'A')) // TODO: float number formatters
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.FLT, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == 'p')
+				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.PTR, fmt[i1 + 1 .. i2 + 1]), helper!(
+							i2 + 2, j + 1));
+			else static if (fmt[i2 + 1] == '%')
+				enum helper = AliasSeq!(fmt[from .. i1 + 1], helper!(i2 + 2, j));
+			else static if (fmt[i2 + 1] == '(' || fmt[i2 + 1 .. i2 + 3] == "-(") {
+				// nested array format specifier
+				enum l = fmt[i2 + 1] == '('
+					? getNestedArrayFmtLen(fmt[i2 + 2 .. $]) : getNestedArrayFmtLen(
+						fmt[i2 + 3 .. $]);
+				alias naSpec = getNestedArrayFmt!(fmt[i2 + 2 .. i2 + 2 + l - 2]);
+				// pragma(msg, fmt[from .. idx1], "|", naSpec[0], "|", naSpec[1], "|");
+				enum helper = AliasSeq!(
+						fmt[from .. i1],
+						arrSpec!(j, naSpec[0], naSpec[1], fmt[i2 + 1] != '('),
+						helper!(i2 + 2 + l, j + 1));
+			} else
+				static assert(0, "Invalid formatter '" ~ fmt[i2 + 1] ~ "' in fmt='" ~ fmt ~ "'");
 		}
 	}
 
-	template countFormatters(tup...) {
-		static if (tup.length == 0)
+	template countFormatters(T...) {
+		static if (T.length == 0)
 			enum countFormatters = 0;
-		else static if (is(typeof(tup[0]) == FmtSpec) || is(typeof(tup[0]) == ArrFmtSpec))
-			enum countFormatters = 1 + countFormatters!(tup[1 .. $]);
+		else static if (is(T[0] == FmtSpec) || is(T[0] == ArrFmtSpec))
+			enum countFormatters = 1 + countFormatters!(T[1 .. $]);
 		else
-			enum countFormatters = countFormatters!(tup[1 .. $]);
+			enum countFormatters = countFormatters!(T[1 .. $]);
 	}
 
 	alias tokens = helper!(0, 0);
-	alias numFormatters = countFormatters!tokens;
+	alias numFormatters = countFormatters!(typeof(tokens));
 }
 
 /// Returns string of enum member value
@@ -841,26 +828,29 @@ string enumToStr(E)(E value) if (is(E == enum)) {
 	return null;
 }
 
-size_t formatPtr(S)(auto ref scope S sink, ulong p) @trusted
-	=> formatPtr(sink, cast(void*)p);
-
-size_t formatPtr(S)(auto ref scope S sink, const void* ptr) {
+size_t formatPtr(S)(auto ref scope S sink, size_t p) {
 	mixin SinkWriter!S;
-	if (ptr)
-		return sink.formatHex!((void*).sizeof * 2)(cast(ptrdiff_t)ptr);
+	if (p)
+		return sink.formatHex!((void*).sizeof * 2)(p);
 
-	write("null");
+	put("null");
 	return 4;
 }
 
-@"pointer"unittest {
-	char[100] buf;
+size_t formatPtr(S)(auto ref scope S sink, in void* p) @trusted
+	=> formatPtr(sink, cast(size_t)p);
 
-	() @nogc {
-		assert(formatPtr(buf, 0x123) && buf[0 .. 16] == "0000000000000123");
-		assert(formatPtr(buf, 0) && buf[0 .. 4] == "null");
-		assert(formatPtr(buf, null) && buf[0 .. 4] == "null");
-	}();
+@"pointer"@nogc unittest {
+	char[32] buf;
+
+	assert(buf.formatPtr(0x123) == 16);
+	assert(buf[0 .. 16] == "0000000000000123");
+	assert(buf.formatPtr(0x1234567890abcdef) == 16);
+	assert(buf[0 .. 16] == "1234567890ABCDEF", buf[0 .. 16]);
+	assert(buf.formatPtr(0) == 4);
+	assert(buf[0 .. 4] == "null");
+	assert(buf.formatPtr(null) == 4);
+	assert(buf[0 .. 4] == "null");
 }
 
 alias Upper = Flag!"Upper";
@@ -870,15 +860,9 @@ size_t formatHex(size_t W = 0, char fill = '0', Upper upper = Upper.no, S)(
 	auto ref scope S sink, ulong val) {
 	static if (is(S == NullSink)) {
 		// just formatted length calculation
-		size_t len = 0;
-		if (!val)
-			len = 1;
-		else {
-			while (val) {
-				val >>= 4;
-				len++;
-			}
-		}
+		size_t len = 1;
+		for (; val; val >>= 4)
+			len++;
 		return max(W, len);
 	} else {
 		mixin SinkWriter!S;
@@ -887,11 +871,9 @@ size_t formatHex(size_t W = 0, char fill = '0', Upper upper = Upper.no, S)(
 		auto v = val;
 		char[16] buf = void;
 
-		while (v) {
-			v >>= 4;
+		for (; val; val >>= 4)
 			len++;
-		}
-		static if (W > 0) {
+		static if (W) {
 			if (W > len) {
 				buf[0 .. W - len] = '0';
 				len = W;
@@ -915,13 +897,13 @@ size_t formatHex(size_t W = 0, char fill = '0', Upper upper = Upper.no, S)(
 			}
 		}
 
-		write(buf[0 .. len]);
+		put(buf[0 .. len]);
 		return len;
 	}
 }
 
 @"hexadecimal"@nogc unittest {
-	char[100] buf;
+	char[32] buf;
 	assert(formatHex(buf, 0x123) && buf[0 .. 3] == "123");
 	assert(formatHex!10(buf, 0x123) && buf[0 .. 10] == "0000000123");
 	assert(formatHex(buf, 0) && buf[0 .. 1] == "0");
@@ -955,7 +937,7 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 			if (unlikely(val < 0)) {
 				if (unlikely(val == long.min)) {
 					// special case for unconvertable value
-					write("-9223372036854775808");
+					put("-9223372036854775808");
 					return 20;
 				}
 
@@ -967,7 +949,7 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 		} else
 			v = val;
 
-		static if (W > 0) {
+		static if (W) {
 			if (W > len) {
 				buf[i .. i + W - len] = fillChar;
 				i += W - len;
@@ -986,13 +968,13 @@ size_t formatDecimal(size_t W = 0, char fillChar = ' ', S, T:
 		} else
 			buf[i++] = '0';
 
-		write(buf[0 .. len]);
+		put(buf[0 .. len]);
 		return len;
 	}
 }
 
 @"decimal"@nogc unittest {
-	char[100] buf;
+	char[32] buf;
 	assert(formatDecimal!10(buf, -1234) && buf[0 .. 10] == "     -1234");
 	assert(formatDecimal!10(buf, 0) && buf[0 .. 10] == "         0");
 	assert(formatDecimal(buf, -1234) && buf[0 .. 5] == "-1234");
@@ -1010,29 +992,29 @@ size_t formatFloat(S)(auto ref scope S sink, double val) @trusted {
 	if (__ctfe) {
 		mixin SinkWriter!S;
 		if (val != val) {
-			write("nan");
+			put("nan");
 			return 3;
 		}
 		size_t len;
 		if (val < 0) {
-			write('-');
+			put('-');
 			len++;
 			val = -val;
 		}
 		if (val == double.infinity) {
-			write("inf");
+			put("inf");
 			return len + 3;
 		}
 		const intPart = cast(long)val;
 		auto fracPart = val - intPart;
 		len += sink.formatDecimal(intPart);
 		if (fracPart > 0) {
-			write('.');
+			put('.');
 			len++;
 			do {
 				fracPart *= 10;
 				const digit = cast(long)fracPart;
-				write(cast(char)('0' + digit));
+				put(cast(char)('0' + digit));
 				len++;
 				fracPart -= digit;
 			}
@@ -1046,16 +1028,16 @@ size_t formatFloat(S)(auto ref scope S sink, double val) @trusted {
 	auto len = min(snprintf(&buf[0], 20, "%g", val), 19);
 	static if (!is(S == NullSink)) {
 		mixin SinkWriter!S;
-		write(buf[0 .. len]);
+		put(buf[0 .. len]);
 	}
 	return len;
 }
 
 @"float"unittest {
-	char[100] buf;
-	assert(formatFloat(buf, 1.2345) && buf[0 .. 6] == "1.2345");
-	assert(formatFloat(buf, double.init) && buf[0 .. 3] == "nan");
-	assert(formatFloat(buf, double.infinity) && buf[0 .. 3] == "inf");
+	char[32] buf;
+	assert(buf.formatFloat(1.2345) && buf[0 .. 6] == "1.2345");
+	assert(buf.formatFloat(double.init) && buf[0 .. 3] == "nan");
+	assert(buf.formatFloat(double.infinity) && buf[0 .. 3] == "inf");
 }
 
 size_t formatUUID(S)(auto ref scope S sink, UUID val) {
@@ -1075,26 +1057,25 @@ size_t formatUUID(S)(auto ref scope S sink, UUID val) {
 			buf[pos + 1] = toChar(val.data[i] & 0x0F);
 		}
 
-		write(buf[0 .. 36]);
+		put(buf[0 .. 36]);
 	}
 	return 36;
 }
 
-version (D_BetterC) {
-} else
+static if (is(UUID))
 	@"UUID"unittest {
-	char[100] buf;
-	assert(formatUUID(buf, UUID([
-		138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189, 251,
-		70
-	])) == 36);
-	assert(buf[0 .. 36] == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
-}
+		char[32] buf;
+		assert(buf.formatUUID(UUID([
+			138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189, 251,
+			70
+		])) == 36);
+		assert(buf[0 .. 36] == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
+	}
 
-/**
+/++
 	Formats SysTime as ISO extended string.
 	Only UTC format supported.
- */
++/
 size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 	mixin SinkWriter!S;
 
@@ -1110,7 +1091,7 @@ size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 	// check for invalid time value
 	version (Windows) {
 		if (time < hnsecsFrom1601) {
-			write(invalidTimeBuf);
+			put(invalidTimeBuf);
 			return invalidTimeBuf.length;
 		}
 	}
@@ -1178,7 +1159,7 @@ size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 
 		if (hnsecs == 0) {
 			buf[19] = 'Z';
-			write(buf[0 .. 20]);
+			put(buf[0 .. 20]);
 			return 20;
 		}
 
@@ -1192,7 +1173,7 @@ size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 				break;
 		}
 		buf[len++] = 'Z';
-		write(buf[0 .. len]);
+		put(buf[0 .. len]);
 		return len;
 	}
 }
@@ -1200,30 +1181,30 @@ size_t formatSysTime(S)(auto ref scope S sink, SysTime val) @trusted {
 version (D_BetterC) {
 } else
 	@"SysTime"unittest {
-	char[100] buf;
+	char[32] buf;
 	alias parse = SysTime.fromISOExtString;
 
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.1234567Z")) == 28);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.1234567Z")) == 28);
 	assert(buf[0 .. 28] == "2020-06-08T14:25:30.1234567Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.123456Z")) == 27);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.123456Z")) == 27);
 	assert(buf[0 .. 27] == "2020-06-08T14:25:30.123456Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.12345Z")) == 26);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.12345Z")) == 26);
 	assert(buf[0 .. 26] == "2020-06-08T14:25:30.12345Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.1234Z")) == 25);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.1234Z")) == 25);
 	assert(buf[0 .. 25] == "2020-06-08T14:25:30.1234Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.123Z")) == 24);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.123Z")) == 24);
 	assert(buf[0 .. 24] == "2020-06-08T14:25:30.123Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.12Z")) == 23);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.12Z")) == 23);
 	assert(buf[0 .. 23] == "2020-06-08T14:25:30.12Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30.1Z")) == 22);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30.1Z")) == 22);
 	assert(buf[0 .. 22] == "2020-06-08T14:25:30.1Z");
-	assert(formatSysTime(buf, parse("2020-06-08T14:25:30Z")) == 20);
+	assert(buf.formatSysTime(parse("2020-06-08T14:25:30Z")) == 20);
 	assert(buf[0 .. 20] == "2020-06-08T14:25:30Z");
 	version (Posix) {
-		assert(formatSysTime(buf, SysTime.init) == 20);
+		assert(buf.formatSysTime(SysTime.init) == 20);
 		assert(buf[0 .. 20] == "0001-01-01T00:00:00Z");
 	} else version (Windows) {
-		assert(formatSysTime(buf, SysTime.init) == 7);
+		assert(buf.formatSysTime(SysTime.init) == 7);
 		assert(buf[0 .. 7] == "invalid");
 	}
 
@@ -1237,11 +1218,11 @@ version (D_BetterC) {
 	assert(getFormatSize(parse("2020-06-08T14:25:30Z")) == 20);
 }
 
-/**
+/++
 	Formats duration.
 	It uses custom formatter that is inspired by std.format output, but a bit shorter.
 	Note: ISO 8601 was considered, but it's not as human readable as used format.
- */
++/
 size_t formatDuration(S)(auto ref scope S sink, Duration val) {
 	mixin SinkWriter!S;
 
@@ -1251,7 +1232,7 @@ size_t formatDuration(S)(auto ref scope S sink, Duration val) {
 
 	long totalHNS = __traits(getMember, val, "_hnsecs"); // access private member
 	if (totalHNS < 0) {
-		write('-');
+		put('-');
 		totalHNS = -totalHNS;
 	}
 
@@ -1301,15 +1282,15 @@ size_t formatDuration(S)(auto ref scope S sink, Duration val) {
 					if (usecs == 0)
 						break;
 				}
-				write(buf[0 .. ulen]);
+				put(buf[0 .. ulen]);
 			}
 
-			write(" ms");
+			put(" ms");
 		}
 	}
 
 	if (!totalLen)
-		write("0 ms");
+		put("0 ms");
 
 	return totalLen;
 }
@@ -1319,44 +1300,46 @@ version (D_BetterC) {
 	@"duration"unittest {
 	import core.time;
 
-	char[100] buf;
+	char[64] buf;
 
-	assert(formatDuration(buf, 1.seconds) == 6);
+	assert(buf.formatDuration(1.seconds) == 6);
 	assert(buf[0 .. 6] == "1 secs");
 
-	assert(formatDuration(buf, 1.seconds + 15.msecs + 5.hnsecs) == 18);
+	assert(buf.formatDuration(1.seconds + 15.msecs + 5.hnsecs) == 18);
 	assert(buf[0 .. 18] == "1 secs, 15.0005 ms");
 
-	assert(formatDuration(buf, 1.seconds + 1215.msecs + 15.hnsecs) == 19);
+	assert(buf.formatDuration(1.seconds + 1215.msecs + 15.hnsecs) == 19);
 	assert(buf[0 .. 19] == "2 secs, 215.0015 ms");
 
-	assert(formatDuration(buf, 5.days) == 6);
+	assert(buf.formatDuration(5.days) == 6);
 	assert(buf[0 .. 6] == "5 days");
 
-	assert(formatDuration(buf, 5.days + 25.hours) == 13);
+	assert(buf.formatDuration(5.days + 25.hours) == 13);
 	assert(buf[0 .. 13] == "6 days, 1 hrs");
 
-	assert(formatDuration(buf, 5.days + 25.hours + 78.minutes) == 22);
+	assert(buf.formatDuration(5.days + 25.hours + 78.minutes) == 22);
 	assert(buf[0 .. 22] == "6 days, 2 hrs, 18 mins");
 
-	assert(formatDuration(buf, 5.days + 25.hours + 78.minutes + 102.seconds) == 31);
+	assert(buf.formatDuration(5.days + 25.hours + 78.minutes + 102.seconds) == 31);
 	assert(buf[0 .. 31] == "6 days, 2 hrs, 19 mins, 42 secs");
 
-	assert(formatDuration(buf, 5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs) == 39);
+	assert(buf.formatDuration(5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs) == 39);
 	assert(buf[0 .. 39] == "6 days, 2 hrs, 19 mins, 44 secs, 321 ms");
 
-	assert(formatDuration(buf, 5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987
+	assert(buf.formatDuration(
+			5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987
 			.usecs) == 43);
 	assert(buf[0 .. 43] == "6 days, 2 hrs, 19 mins, 44 secs, 322.987 ms");
 
-	assert(formatDuration(buf, 5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987.usecs + 15
+	assert(buf.formatDuration(
+			5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987.usecs + 15
 			.hnsecs) == 44);
 	assert(buf[0 .. 44] == "6 days, 2 hrs, 19 mins, 44 secs, 322.9885 ms");
 
-	assert(formatDuration(buf, -42.msecs) == 6);
+	assert(buf.formatDuration(-42.msecs) == 6);
 	assert(buf[0 .. 6] == "-42 ms");
 
-	assert(formatDuration(buf, Duration.zero) == 4);
+	assert(buf.formatDuration(Duration.zero) == 4);
 	assert(buf[0 .. 4] == "0 ms");
 }
 
@@ -1413,12 +1396,12 @@ private template SinkWriter(S, bool field = true) {
 				totalLen += len;
 			}
 
-			void write(const(char)[] str) {
+			void put(const(char)[] str) {
 				s[0 .. str.length] = str;
 				advance(str.length);
 			}
 
-			void write(char ch) {
+			void put(char ch) {
 				s[0] = ch;
 				advance(1);
 			}
@@ -1431,11 +1414,11 @@ private template SinkWriter(S, bool field = true) {
 			totalLen += len;
 		}
 
-		void write(const(char)[] str) {
+		void put(in char[] str) {
 			advance(str.length);
 		}
 
-		void write(char) {
+		void put(char) {
 			advance(1);
 		}
 	} else {
@@ -1443,20 +1426,18 @@ private template SinkWriter(S, bool field = true) {
 			alias s = sink;
 		import std.range : rput = put;
 
-		void advance()(size_t len) {
+		void advance(size_t len) {
 			totalLen += len;
 		}
 
-		void write()(const(char)[] str) {
+		void put(in char[] str) {
 			rput(s, str);
 			advance(str.length);
 		}
 
-		void write()(char ch) {
+		void put(char ch) {
 			rput(s, ch);
 			advance(1);
 		}
 	}
-
-	alias put = write; // output range interface
 }
