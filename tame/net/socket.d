@@ -8,13 +8,12 @@ module tame.net.socket;
 // This will enable some tests which are too slow or flaky to run as part of CI.
 
 import core.stdc.stdlib;
-import core.time : dur, Duration;
-import std.string : fromStringz;
-import std.conv : to;
-import tame.unsafe.ptrop;
+import core.time;
+import tame.format : text;
 
 public import tame.net.addr;
 import tame.net.error;
+import tame.unsafe.ptrop;
 
 @safe:
 
@@ -198,11 +197,11 @@ private:
 				import std.datetime.stopwatch : StopWatch;
 				import std.typecons : Yes;
 
-				enum msecs = 1000;
+				enum ms = 1000;
 				auto pair = socketPair();
 				auto testSock = pair[0];
 				testSock.setOption(SocketOptionLevel.SOCKET,
-					SocketOption.rcvtimeo, dur!"msecs"(msecs));
+					SocketOption.rcvtimeo, ms.msecs);
 
 				auto sw = StopWatch(Yes.autoStart);
 				ubyte[1] buf;
@@ -212,9 +211,9 @@ private:
 				Duration readBack = void;
 				testSock.getOption(SocketOptionLevel.SOCKET, SocketOption.rcvtimeo, readBack);
 
-				assert(readBack.total!"msecs" == msecs);
-				assert(sw.peek().total!"msecs" > msecs - 100 && sw.peek()
-					.total!"msecs" < msecs + 100);
+				assert(readBack.total!"msecs" == ms);
+				assert(sw.peek().total!"msecs" > ms - 100 && sw.peek()
+					.total!"msecs" < ms + 100);
 			});
 	}
 
@@ -237,7 +236,7 @@ public:
 		char[256] result = void; // Host names are limited to 255 chars.
 		if (ERROR == gethostname(result.ptr, result.length))
 			throw new SocketOSException("Unable to obtain host name");
-		return cast(string)fromStringz(result.ptr);
+		return text(result.ptr);
 	}
 
 	/++
@@ -551,19 +550,19 @@ public:
 	/// Get a timeout (duration) option.
 	void getOption(SocketOptionLevel level, SocketOption option, out Duration result) @trusted {
 		enforce(option == SocketOption.sndtimeo || option == SocketOption.rcvtimeo,
-			new SocketParamException("Not a valid timeout option: " ~ to!string(option)));
+			new SocketParamException(text("Not a valid timeout option: ", option)));
 		// WinSock returns the timeout values as a milliseconds DWORD,
 		// while Linux and BSD return a timeval struct.
 		version (Windows) {
-			int msecs;
-			getOption(level, option, (&msecs)[0 .. 1]);
+			int ms;
+			getOption(level, option, (&ms)[0 .. 1]);
 			if (option == SocketOption.rcvtimeo)
-				msecs += WINSOCK_TIMEOUT_SKEW;
-			result = dur!"msecs"(msecs);
+				ms += WINSOCK_TIMEOUT_SKEW;
+			result = ms.msecs;
 		} else version (Posix) {
 			timeval tv;
 			getOption(level, option, (&tv)[0 .. 1]);
-			result = dur!"seconds"(tv.tv_sec) + dur!"usecs"(tv.tv_usec);
+			result = tv.tv_sec.seconds + tv.tv_usec.usecs;
 		} else
 			static assert(0);
 	}
@@ -618,7 +617,7 @@ public:
 		// Set a receive timeout, and then wait at one end of
 		// the socket pair, knowing that no data will arrive.
 		pair[0].setOption(SocketOptionLevel.SOCKET,
-			SocketOption.rcvtimeo, dur!"seconds"(1));
+			SocketOption.rcvtimeo, 1.seconds);
 
 		auto sw = StopWatch(Yes.autoStart);
 		ubyte[1] buffer;
@@ -629,18 +628,18 @@ public:
 	+/
 	void setOption(SocketOptionLevel level, SocketOption option, Duration value) @trusted {
 		enforce(option == SocketOption.sndtimeo || option == SocketOption.rcvtimeo,
-			new SocketParamException("Not a valid timeout option: " ~ to!string(option)));
+			new SocketParamException(text("Not a valid timeout option: ", option)));
 
-		enforce(value >= dur!"hnsecs"(0), new SocketParamException(
+		enforce(value >= 0.hnsecs, new SocketParamException(
 				"Timeout duration must not be negative."));
 
 		version (Windows) {
 			import std.algorithm : max;
 
-			int msecs = cast(int)value.total!"msecs";
-			if (msecs != 0 && option == SocketOption.rcvtimeo)
-				msecs = max(1, msecs - WINSOCK_TIMEOUT_SKEW);
-			setOption(level, option, msecs);
+			int ms = cast(int)value.total!"msecs";
+			if (ms != 0 && option == SocketOption.rcvtimeo)
+				ms = max(1, ms - WINSOCK_TIMEOUT_SKEW);
+			setOption(level, option, ms);
 		} else version (Posix) {
 			timeval tv;
 			value.split!("seconds", "usecs")(tv.tv_sec, tv.tv_usec);
@@ -811,7 +810,7 @@ bool wouldHaveBlocked() nothrow @nogc {
 @safe unittest {
 	auto sockets = socketPair();
 	auto s = sockets[0];
-	s.setOption(SocketOptionLevel.SOCKET, SocketOption.rcvtimeo, dur!"msecs"(10));
+	s.setOption(SocketOptionLevel.SOCKET, SocketOption.rcvtimeo, 10.msecs);
 	ubyte[16] buffer;
 	auto rec = s.receive(buffer);
 	assert(rec == -1 && wouldHaveBlocked());

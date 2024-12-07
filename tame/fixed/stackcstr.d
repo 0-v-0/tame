@@ -1,9 +1,5 @@
 module tame.fixed.stackcstr;
 
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
-
 @safe pure nothrow @nogc:
 
 import core.stdc.string;

@@ -18,7 +18,7 @@ version (CRuntime_UClibc) version = GNU_STRERROR;
 
 @safe:
 
-/// Base exception thrown by `std.socket`.
+/// Base exception thrown by `tame.net`.
 class SocketException : Exception {
 	mixin basicExceptionCtors;
 }
@@ -30,7 +30,7 @@ need to actually show up in the docs, since there's not really any public
 need for it outside of being a default argument.
 +/
 string formatSocketError(int err) @trusted nothrow {
-	import std.conv : to;
+	import tame.format;
 
 	version (Posix) {
 		import core.stdc.string;
@@ -40,7 +40,7 @@ string formatSocketError(int err) @trusted nothrow {
 			const(char)* cs = strerror_r(err, buf.ptr, buf.length);
 		} else {
 			if (auto errs = strerror_r(err, buf.ptr, buf.length))
-				return "Socket error " ~ to!string(err);
+				return text("Socket error ", err);
 			const(char)* cs = buf.ptr;
 		}
 
@@ -55,7 +55,7 @@ string formatSocketError(int err) @trusted nothrow {
 		//}
 		//else
 		// TODO: generateSysErrorMsg
-		return "Socket error " ~ to!string(err);
+		return text("Socket error ", err);
 }
 
 /++

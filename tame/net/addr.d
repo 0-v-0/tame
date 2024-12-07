@@ -3,6 +3,7 @@ module tame.net.addr;
 import std.string : fromStringz;
 import core.stdc.string;
 import tame.net.error;
+import tame.format : globalSink, text;
 import tame.string : indexOf;
 
 version (iOS)
@@ -424,7 +425,7 @@ struct Address {
 
 		enforce(ret == 0, new AddressException("Could not get " ~
 				(numeric ? "host address" : "host name")));
-		return fromStringz(buf.ptr).idup;
+		return text(buf.ptr);
 	}
 
 	// Common code for toPortString and toServiceName
@@ -437,13 +438,12 @@ struct Address {
 				numeric ? NI_NUMERICSERV : NI_NAMEREQD
 		) == 0, new AddressException("Could not get " ~
 				(numeric ? "port number" : "service name")));
-		return fromStringz(buf.ptr).idup;
+		return text(buf.ptr);
 	}
 
-	void toString(R)(R r) const {
+	void toString(R)(ref R r) const {
 		try {
 			const host = toAddrString();
-			const port = toPortString();
 			if (host.indexOf(':') >= 0) {
 				r ~= '[';
 				r ~= host;
@@ -452,7 +452,7 @@ struct Address {
 				r ~= host;
 				r ~= ':';
 			}
-			r ~= port;
+			r ~= toPortString();
 		} catch (Exception) {
 		}
 	}
@@ -726,7 +726,6 @@ static if (is(sockaddr_un)) {
 		}
 
 	pure nothrow @nogc:
-
 		/++
 		Construct a new `UnixAddr`.
 		Params:
@@ -738,7 +737,6 @@ static if (is(sockaddr_un)) {
 		}
 
 	@property:
-
 		/// Returns the path to the Unix domain socket.
 		string path() const @trusted
 			=> cast(string)fromStringz(cast(const char*)sun.sun_path.ptr);

@@ -11,10 +11,6 @@ package:
 import core.stdc.string : memcmp, memcpy;
 import std.ascii : isWhite;
 
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
-
 nothrow @nogc:
 
 /+

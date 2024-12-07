@@ -3,10 +3,6 @@ module tame.unsafe.scoped;
 import std.traits;
 import tame.bitop : alignTo;
 
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
-
 /**
 Allocates a `class` object right inside the current scope,
 therefore avoiding the overhead of `new`. This facility is unsafe;

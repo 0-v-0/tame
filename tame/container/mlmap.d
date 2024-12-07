@@ -1,9 +1,5 @@
 module tame.container.mlmap;
 
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
-
 private enum isSomeString(T) = is(immutable T == immutable C[], C) &&
 	(is(C == char) || is(C == wchar) || is(C == dchar));
 

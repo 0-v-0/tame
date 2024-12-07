@@ -1,9 +1,5 @@
 module tame.unsafe.ptrop;
 
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
-
 pure nothrow @nogc:
 
 /++

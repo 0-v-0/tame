@@ -33,7 +33,7 @@ struct FixedBuffer(size_t N, T = char) if (T.sizeof == 1) {
 		outputFunc = cast(OutputFunc)oFunc;
 	}
 
-	T opCast(T : bool)() const => !empty();
+	T opCast(T : bool)() const => !empty;
 
 	T opCast(T)() const if (!is(T : bool)) => cast(T)buf[0 .. pos];
 
@@ -119,6 +119,8 @@ pure @nogc nothrow @safe:
 	@property length() const => _len;
 	@property void length(size_t n) {
 		_len = n;
+		if (n > buf.length)
+			capacity = n;
 	}
 
 	@property capacity() const => buf.length;
@@ -139,7 +141,6 @@ pure @nogc nothrow @safe:
 			onOutOfMemoryError();
 	}
 
-	alias opDollar = length;
 	alias opOpAssign(string op : "~") = put;
 
 	void reserve(size_t n) scope {
@@ -173,16 +174,22 @@ pure @nogc nothrow @safe:
 		_len = 0;
 	}
 
-	ref inout(T) opIndex(size_t i) inout
-	in (i < _len)
-		=> buf[i];
+	inout(T)[] data() inout => buf[0 .. _len];
 
-	inout(T)[] opSlice() inout => buf[0 .. _len];
-	alias data = opSlice;
-
-	inout(T)[] opSlice(size_t a, size_t b) inout
-	in (a <= b && b <= _len)
-		=> buf[a .. b];
+	alias data this;
 }
 
 alias StringSink = Sink!char;
+
+unittest {
+	auto s = Sink!char();
+	s.put("abc");
+	assert(s.length == 3);
+	assert(s.data == "abc");
+	s ~= "def";
+	assert(s.length == 6);
+	assert(s[0 .. 5] == "abcde");
+	s.clear();
+	assert(s.length == 0);
+	assert(s[] == "");
+}

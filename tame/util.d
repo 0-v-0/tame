@@ -1,12 +1,8 @@
-module tame.misc;
+module tame.util;
 
 import std.ascii,
 std.meta,
 std.traits;
-
-version (LDC) {
-	pragma(LDC_no_moduleinfo);
-}
 
 package:
 
@@ -26,8 +22,8 @@ int numDigits(T : ulong)(T num, uint radix = 10) @trusted {
 		int digits = num == 0;
 		U n = num;
 	}
-	for (; n; digits++)
-		n /= radix;
+	for (; n; n /= radix)
+		digits++;
 	return digits;
 }
 
