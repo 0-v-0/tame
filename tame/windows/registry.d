@@ -63,22 +63,22 @@ enum REGSAM {
 
 nothrow @nogc:
 
-int tryOpen(in HKEY hkey, in wchar[] subKey, out HKEY result, REGSAM samDesired = REGSAM.KEY_READ)
+int tryOpen(in HKEY hkey, in wchar* subKey, out HKEY result, REGSAM samDesired = REGSAM.KEY_READ)
 in (hkey) {
-	return RegOpenKeyExW(hkey, subKey.ptr, 0, compatibleRegsam(samDesired), &result);
+	return RegOpenKeyExW(hkey, subKey, 0, compatibleRegsam(samDesired), &result);
 }
 
-int tryQuery(in HKEY hkey, in wchar[] name, wchar* data, ref uint len)
+int tryQuery(in HKEY hkey, in wchar* name, wchar* data, ref uint len)
 in (hkey) {
 	DWORD type;
-	const res = RegQueryValueExW(hkey, name.ptr, null, &type, data, &len);
+	const res = RegQueryValueExW(hkey, name, null, &type, data, &len);
 
 	if (res == ERROR_SUCCESS && data) {
 		switch (type) {
 		case RegValueType.SZ:
 		case RegValueType.EXPAND_SZ:
 			debug {
-				auto ws = (cast(immutable(wchar)*)data)[0 .. len / wchar.sizeof];
+				auto ws = (cast(const(wchar)*)data)[0 .. len / wchar.sizeof];
 				assert(ws.length && ws[$ - 1] == '\0');
 				if (ws.length && ws[$ - 1] == '\0')
 					ws.length = ws.length - 1;

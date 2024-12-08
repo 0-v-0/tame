@@ -133,10 +133,10 @@ pure @nogc nothrow @safe:
 			return;
 		}
 		bool overflow;
-		const reqsize = mulu(T.sizeof, n, overflow);
+		const newSize = mulu(T.sizeof, n, overflow);
 		if (overflow)
 			onOutOfMemoryError();
-		buf = (cast(T*)pureRealloc(buf.ptr, reqsize))[0 .. n];
+		buf = (cast(T*)pureRealloc(buf.ptr, newSize))[0 .. n];
 		if (!buf)
 			onOutOfMemoryError();
 	}

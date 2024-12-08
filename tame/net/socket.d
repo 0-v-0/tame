@@ -10,6 +10,7 @@ module tame.net.socket;
 import core.stdc.stdlib;
 import core.time;
 import tame.format : text;
+import tame.util;
 
 public import tame.net.addr;
 import tame.net.error;
@@ -698,18 +699,18 @@ public:
 		switch (addressFamily) {
 			static if (is(UnixAddr)) {
 		case AddrFamily.UNIX:
-				ptr = malloc(UnixAddr.sizeof);
+				ptr = alloc!(UnixAddr, false);
 				return *cast(UnixAddr*)ptr = UnixAddr.init;
 			}
 		case AddrFamily.IPv4:
-			ptr = calloc(1, IPv4Addr.sizeof);
+			ptr = alloc!IPv4Addr;
 			return *cast(IPv4Addr*)ptr;
 		case AddrFamily.IPv6:
-			ptr = calloc(1, IPv6Addr.sizeof);
+			ptr = alloc!IPv6Addr;
 			return *cast(IPv6Addr*)ptr;
 		default:
 		}
-		ptr = calloc(1, UnknownAddr.sizeof);
+		ptr = alloc!UnknownAddr;
 		return *cast(UnknownAddr*)ptr;
 	}
 }

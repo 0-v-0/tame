@@ -6,6 +6,16 @@ std.traits;
 
 package:
 
+T* alloc(T, bool init = true)() {
+	import core.stdc.stdlib;
+
+	if (T* ptr = cast(T*)(init ? calloc(1, T.sizeof) : malloc(T.sizeof)))
+		return ptr;
+	import core.exception : onOutOfMemoryError;
+
+	onOutOfMemoryError();
+}
+
 int numDigits(T : ulong)(T num, uint radix = 10) @trusted {
 	alias U = AliasSeq!(uint, ulong)[T.sizeof / 8];
 	static if (isSigned!T) {
