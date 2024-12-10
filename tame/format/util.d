@@ -63,7 +63,7 @@ auto sinkWrap(S)(auto ref scope S sink) @trusted { // we're only using this inte
 		static assert(0, "Unsupported sink type: " ~ S.stringof);
 }
 
-@"sink wrapper" @nogc unittest {
+@"sink wrapper"@nogc unittest {
 	char[32] buf;
 	auto sink = sinkWrap(buf);
 	sink.put("foo");
@@ -94,38 +94,36 @@ template SinkWriter(S, bool field = true) {
 				advance(1);
 			}
 		}
-	} else static if (is(S == NullSink)) {
-	@nogc pure nothrow @safe:
-		static if (field)
-			alias s = sink;
-		void advance(uint len) {
-			totalLen += len;
-		}
-
-		void put(in char[] str) {
-			advance(cast(uint)str.length);
-		}
-
-		void put(char) {
-			advance(1);
-		}
 	} else {
 		static if (field)
 			alias s = sink;
-		import std.range : rput = put;
 
-		void advance(uint len) {
+		void advance(uint len) @nogc pure nothrow @safe {
 			totalLen += len;
 		}
 
-		void put(in char[] str) {
-			rput(s, str);
-			advance(cast(uint)str.length);
-		}
+		static if (is(S == NullSink)) {
+		@nogc pure nothrow @safe:
 
-		void put(char ch) {
-			rput(s, ch);
-			advance(1);
+			void put(in char[] str) {
+				advance(cast(uint)str.length);
+			}
+
+			void put(char) {
+				advance(1);
+			}
+		} else {
+			import std.range : rput = put;
+
+			void put(in char[] str) {
+				rput(s, str);
+				advance(cast(uint)str.length);
+			}
+
+			void put(char ch) {
+				rput(s, ch);
+				advance(1);
+			}
 		}
 	}
 }

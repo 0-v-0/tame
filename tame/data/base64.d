@@ -1,7 +1,7 @@
 /++
 	This module is used to decode and encode base64 char[] arrays.
 +/
-module tame.base64;
+module tame.data.base64;
 
 @safe pure nothrow:
 

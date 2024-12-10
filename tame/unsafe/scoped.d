@@ -64,7 +64,7 @@ template scoped(T) if (classInstanceAlignment!T <= ubyte.max) {
 	/** Returns the _scoped object.
     Params: args = Arguments to pass to `T`'s constructor.
     */
-	@system auto scoped(Args...)(auto ref Args args) {
+	@system auto scoped(A...)(auto ref A args) {
 		import core.lifetime : emplace, forward;
 
 		Scoped result = void;

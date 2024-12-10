@@ -1,4 +1,4 @@
-module tame.uri;
+module tame.text.uri;
 
 import std.ascii;
 import std.range;
@@ -105,10 +105,10 @@ void extractParams(S, M)(ref S url, ref M params) {
 }
 
 void putQueryParams(R, M)(R res, M params, char delimiter = '&') {
-	foreach (key, value; params) {
+	foreach (key, val; params) {
 		res ~= key;
 		res ~= '=';
-		res ~= value;
+		res ~= val;
 		res ~= delimiter;
 	}
 }

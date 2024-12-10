@@ -199,9 +199,8 @@ nothrow @nogc:
 
 	@disable this(this);
 
-	~this() @trusted {
-		freeaddrinfo(head);
-	}
+	~this() @trusted
+		=> freeaddrinfo(head);
 
 pure:
 	@property const {

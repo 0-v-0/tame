@@ -1,24 +1,33 @@
 name "tame"
 description "some utility library for D"
 authors "0-v-0"
-copyright "Copyright © 2022, 0-v-0"
+copyright "Copyright © 2022-2024, 0-v-0"
 license "MIT"
 sourcePaths "tame"
 importPaths "."
-dflags "-dip1008" "-preview=in"
+dflags "-dip1008" "-preview=in" "-preview=fieldwise" "-preview=fixImmutableConv"
 configuration "lib" {
 	targetType "library"
-	excludedSourceFiles "tame/lockfree/*.d" "tame/net/*.d"
+	excludedSourceFiles "tame/data/yaml/*.d" "tame/lockfree/*.d" "tame/net/*.d"
 }
 subPackage {
 	name "lockfree"
+	description "Lock-free data structures"
 	sourcePaths "tame/lockfree"
 	importPaths "."
 	dependency "tame" path="."
 }
 subPackage {
 	name "net"
+	description "Network utilities"
 	sourcePaths "tame/net"
+	importPaths "."
+	dependency "tame" path="."
+}
+subPackage {
+	name "yaml"
+	description "Lightweight YAML parser"
+	sourcePaths "tame/data/yaml"
 	importPaths "."
 	dependency "tame" path="."
 }

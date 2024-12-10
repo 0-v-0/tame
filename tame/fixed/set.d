@@ -62,7 +62,7 @@ pure:
 		bool full() const => length == buckets.length;
 	}
 
-	bool add(in T val) {
+	bool add(in T val) @trusted {
 		if (length == N)
 			return false;
 
@@ -79,7 +79,7 @@ pure:
 			return false;
 
 		p.hash = hash;
-		p.val = val;
+		p.val = cast(T)val;
 		return true;
 	}
 

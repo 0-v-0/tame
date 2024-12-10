@@ -5,4 +5,5 @@ version (LDC) {
 }
 
 public import tame.unsafe.ptrop,
-tame.unsafe.scoped;
+tame.unsafe.scoped,
+tame.unsafe.string;

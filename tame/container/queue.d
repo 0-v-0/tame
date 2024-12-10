@@ -31,15 +31,15 @@ private:
 	size_t len;
 
 	// allocate a new node or recycle one from the stock.
-	Node* make(T value, Node* next = null) @trusted nothrow @nogc {
+	Node* make(T val, Node* next = null) @trusted nothrow @nogc {
 		Node* result;
 		if (stock !is null) {
 			result = stock;
 			stock = result.next;
-			result.value = value;
+			result.value = val;
 			result.next = next;
 		} else {
-			result = Allocator.make!Node(value, next);
+			result = Allocator.make!Node(val, next);
 			// GC can dispose T managed member if it thinks they are no used...
 			static if (hasIndirections!T) {
 				import core.memory : GC;

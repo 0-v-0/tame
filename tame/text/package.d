@@ -6,4 +6,5 @@ version (LDC) {
 
 public import tame.text.ascii,
 tame.text.encoding,
-tame.text.uni;
+tame.text.uni,
+tame.text.uri;

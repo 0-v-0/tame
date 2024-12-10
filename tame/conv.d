@@ -1,5 +1,7 @@
 module tame.conv;
 
+public import tame.format : text;
+
 ulong convert(T)(const T[] digits, uint radix = 10, size_t* ate = null) {
 	size_t eaten;
 	ulong value;

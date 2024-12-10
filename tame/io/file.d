@@ -2,6 +2,7 @@ module tame.io.file;
 
 import core.stdc.stdio;
 import core.stdc.stdlib;
+import tame.unsafe.string;
 
 version (Windows) {
 	// fopen expects file names to be
@@ -18,7 +19,7 @@ version (Windows) {
 	static assert(0, "Unsupported platform");
 
 struct File {
-nothrow:
+nothrow @nogc:
 	this(in char[] name, in char[] mode = "rb") {
 		handle = open(name, mode);
 	}
@@ -46,20 +47,75 @@ nothrow:
 		return fwrite(buffer.ptr, 1, buffer.length, handle);
 	}
 
+	size_t writeln(in char[] buffer) @trusted
+	in (isOpen, "file is not open") {
+		return write(buffer) + write('\n');
+	}
+
 	size_t write(char c) @trusted
 	in (isOpen, "file is not open") {
 		return fputc(c, handle) != EOF;
 	}
 
-	@property @safe pure @nogc {
-		bool isOpen() const
+	alias put = write;
+
+	bool flush() @trusted
+	in (isOpen, "file is not open") {
+		return fflush(handle) == 0;
+	}
+
+	void seek(long offset, int origin = SEEK_SET) @trusted
+	in (isOpen, "file is not open") {
+		version (Windows) {
+			version (CRuntime_Microsoft) {
+				alias fseekF = _fseeki64;
+				alias off_t = long;
+			} else {
+				alias fseekF = fseek;
+				alias off_t = int;
+			}
+		} else version (Posix) {
+			import core.sys.posix.stdio : fseeko, off_t;
+
+			alias fseekF = fseeko;
+		}
+		fseekF(handle, cast(off_t)offset, origin);
+	}
+
+	@property @safe const {
+		bool isOpen() pure
 			=> handle !is null;
 
-		bool eof() const @trusted
+		bool eof() @trusted pure
+		in (isOpen, "file is not open")
 			=> feof(cast(FILE*)handle) != 0;
 
-		bool error() const @trusted
+		bool error() @trusted pure
+		in (isOpen, "file is not open")
 			=> ferror(cast(FILE*)handle) != 0;
+
+		long tell() @trusted
+		in (isOpen, "file is not open") {
+			version (Windows) {
+				version (CRuntime_Microsoft)
+					return _ftelli64(cast(FILE*)handle);
+				else
+					return ftell(cast(FILE*)handle);
+			} else version (Posix) {
+				import core.sys.posix.stdio : ftello;
+
+				return ftello(cast(FILE*)handle);
+			}
+		}
+	}
+
+	@property long size() @trusted
+	in (isOpen, "file is not open") {
+		long pos = tell;
+		seek(0, SEEK_END);
+		long size = tell;
+		seek(pos, SEEK_SET);
+		return size;
 	}
 
 package:
@@ -135,22 +191,6 @@ bool remove(in char[] name) @trusted nothrow @nogc {
 }
 
 private:
-template TempCStr(alias s, string name = s.stringof ~ "z") {
-	import core.stdc.string;
-
-	mixin("auto ", name, "= cast(char*)memcpy(alloca(s.length + 1), s.ptr, s.length);");
-	int _ = mixin(name)[s.length] = 0;
-}
-
-template TempWCStr(alias s, string name = s.stringof ~ "w") {
-	mixin TempCStr!(s, "strz");
-
-	// Find out how many characters there is to convert to UTF-16
-	int reqLen = MultiByteToWideChar(CP_UTF8, 0, strz, -1, null, 0);
-	mixin("auto ", name, "= cast(wchar*)alloca(reqLen * wchar.sizeof);");
-	// Convert to UTF-16
-	int _ = MultiByteToWideChar(CP_UTF8, 0, strz, -1, mixin(name), reqLen);
-}
 
 auto open(in char[] name, in char[] mode) @trusted {
 	version (Windows) {

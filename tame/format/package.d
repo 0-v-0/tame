@@ -68,11 +68,11 @@ Params:
 
 Returns: the length of the formatted string.
 +/
-uint formatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args args) {
+uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A args) {
 	// TODO: not pure because of float formatter
 	alias sfmt = splitFmt!fmt;
-	static assert(sfmt.numFormatters == Args.length, "Expected " ~ sfmt.numFormatters.stringof ~
-			" arguments, got " ~ Args.length.stringof);
+	static assert(sfmt.numFormatters == A.length, "Expected " ~ sfmt.numFormatters.stringof ~
+			" arguments, got " ~ A.length.stringof);
 
 	mixin SinkWriter!S;
 
@@ -83,7 +83,7 @@ uint formatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args arg
 				put(t);
 		} else {
 			enum j = t.i;
-			alias T = Unqual!(Args[j]);
+			alias T = Unqual!(A[j]);
 			enum N = T.stringof;
 			static if (is(typeof(t) == ArrFmtSpec)) {
 				static assert(
@@ -170,8 +170,7 @@ uint formatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args arg
 						put(')');
 					} else static if (is(T : Throwable)) {
 						advance(s.formatTo!"%s@%s(%d): %s"(
-								typeid(val)
-								.name, val.file, val.line, val.msg));
+								T.stringof, val.file, val.line, val.msg));
 					} else static if (is(typeof(val[])))
 						advance(s.formatTo(val[])); // sliceable values
 					else static if (is(T == struct)) {
@@ -235,7 +234,7 @@ uint formatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args arg
 	char[64] buf;
 	ubyte[3] data = [1, 2, 3];
 	assert(formatTo!"hello %s %s %% world %d %x %p"(buf, data, "moshe", -567, 7, 7) == 53);
-	assert(buf[0 .. 53] == "hello [1, 2, 3] moshe % world -567 7 0000000000000007", buf[0 .. 53]);
+	assert(buf[0 .. 53] == "hello [1, 2, 3] moshe % world -567 7 0000000000000007");
 }
 
 @system StringSink globalSink;
@@ -244,7 +243,7 @@ uint formatTo(string fmt = "%s", S, Args...)(ref scope S sink, auto ref Args arg
 	Same as `formatTo`, but it internally uses static malloc buffer to write formatted string to.
 	So be careful that next call replaces internal buffer data and previous result isn't valid anymore.
 +/
-const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) @trusted {
+const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @trusted {
 	globalSink.clear();
 	formatTo!fmt(globalSink, args);
 	return cast(const(char)[])globalSink.data;
@@ -380,12 +379,13 @@ const(char)[] nogcFormat(string fmt = "%s", Args...)(auto ref Args args) @truste
 	}
 
 	Custom c;
-	assert(nogcFormat(c) == "custom: foo=42");
-	assert(getFormatSize(c) == "custom: foo=42".length);
+	enum result = "custom: foo=42";
+	assert(nogcFormat(c) == result);
+	assert(getFormatSize(c) == result.length);
 
 	char[64] buf;
 	auto l = buf.formatTo(c);
-	assert(buf[0 .. l] == "custom: foo=42");
+	assert(buf[0 .. l] == result);
 }
 
 string text(T...)(auto ref T args) @trusted if (T.length) {
@@ -424,7 +424,7 @@ unittest {
 }
 
 /// Gets size needed to hold formatted string result
-uint getFormatSize(string fmt = "%s", Args...)(auto ref Args args) nothrow @nogc {
+uint getFormatSize(string fmt = "%s", A...)(auto ref A args) nothrow @nogc {
 	NullSink ns;
 	return ns.formatTo!fmt(args);
 }
@@ -517,9 +517,9 @@ uint formatDecimal(uint W = 0, char fillChar = ' ', S, T:
 	} else {
 		mixin SinkWriter!S;
 
-		ulong v;
 		char[20] buf = void; // max number of digits for 8bit numbers is 20
 		uint i;
+		ulong v = void;
 
 		static if (isSigned!T) {
 			if (unlikely(val < 0)) {

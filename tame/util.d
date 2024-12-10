@@ -9,8 +9,8 @@ package:
 T* alloc(T, bool init = true)() {
 	import core.stdc.stdlib;
 
-	if (T* ptr = cast(T*)(init ? calloc(1, T.sizeof) : malloc(T.sizeof)))
-		return ptr;
+	if (T* p = cast(T*)(init ? calloc(1, T.sizeof) : malloc(T.sizeof)))
+		return p;
 	import core.exception : onOutOfMemoryError;
 
 	onOutOfMemoryError();

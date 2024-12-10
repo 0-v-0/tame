@@ -5,3 +5,4 @@
 *.lib
 *.pdb
 /dub.selections.json
+.ldc2_cache
