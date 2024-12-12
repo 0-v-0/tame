@@ -104,7 +104,7 @@ pure:
 		buckets[] = Bucket.init;
 	}
 
-	T* opBinaryRight(string op : "in")(in T val) {
+	T* opBinaryRight(string op : "in")(in T val) return {
 		if (!length)
 			return null;
 

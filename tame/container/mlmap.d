@@ -139,7 +139,7 @@ struct MLMap(K = string, V = string) {
 	}
 
 	MLMap!(K, V) opOpAssign(string op : "~")(MLMap!(K, V) rhs) {
-		if (empty)
+		if (head.empty)
 			return rhs;
 		auto m = head;
 		while (m.next)
@@ -151,7 +151,7 @@ struct MLMap(K = string, V = string) {
 	MLMap!(K, V) opBinary(string op : "~")(MLMap!(K, V) rhs) {
 		auto head = mlmap();
 		auto m = head;
-		for (auto p = next; p; p = p.next) {
+		for (auto p = head.next; p; p = p.next) {
 			auto node = mlmap(p.aa);
 			m.next = node;
 			m = node;

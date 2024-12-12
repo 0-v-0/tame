@@ -4,14 +4,16 @@ import std.datetime;
 import std.conv : ConvException;
 import std.format : formattedRead;
 
-SysTime parseSysTime(S)(in S input) {
+SysTime parseSysTime(S)(in S input) @trusted {
 	import std.algorithm.searching;
-	import std.regex : match;
+	import std.regex;
+	enum RE1 = `\d{4}-\D{3}-\d{2}`;
+	enum RE2 = `.*[\+|\-]\d{1,2}:\d{1,2}|.*Z`;
 
 	try {
-		if (input.match(`\d{4}-\D{3}-\d{2}.*`))
+		if (input.match(RE1))
 			return SysTime.fromSimpleString(input);
-		if (input.match(`.*[\+|\-]\d{1,2}:\d{1,2}|.*Z`))
+		if (input.match(RE2))
 			return input.canFind('-') ?
 				SysTime.fromISOExtString(input) : SysTime.fromISOString(input);
 		return SysTime(parseDateTime(input), UTC());
@@ -40,9 +42,9 @@ SysTime parseSysTime(S)(in S input) {
 	//parseSysTime("2010-12-30 12:10:04.1+00"); // postgresql
 }
 
-DateTime parseDateTime(S)(in S input) @safe {
+DateTime parseDateTime(S)(in S input) @trusted {
 	import std.string;
-	import std.regex : match;
+	import std.regex;
 
 	try {
 		if (input.match(`\d{8}T\d{6}`)) // ISO String: 'YYYYMMDDTHHMMSS'

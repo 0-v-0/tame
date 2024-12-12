@@ -106,7 +106,7 @@ pure:
 		buckets[] = Bucket.init;
 	}
 
-	V* opBinaryRight(string op : "in")(in K key) {
+	V* opBinaryRight(string op : "in")(in K key) return {
 		if (!length)
 			return null;
 

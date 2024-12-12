@@ -356,11 +356,21 @@ auto parseAddress(in char[] host, in char[] service = null) {
 }
 
 unittest {
-	softUnittest({
+	softUnittest(() @safe {
 		const address = parseAddress("63.105.9.61");
 		assert(address.toAddrString() == "63.105.9.61");
 
-		assert(collectException!SocketException(parseAddress("Invalid Address")));
+		try {
+			address.toHostName();
+			assert(0, "Reverse lookup should fail");
+		} catch (SocketException) {
+		}
+
+		try {
+			parseAddress("Invalid Address");
+			assert(0, "Invalid address should fail");
+		} catch (SocketException) {
+		}
 	});
 }
 
@@ -472,7 +482,7 @@ pure nothrow @nogc:
 	}
 
 	/// Family of this address.
-	@property AddrFamily addressFamily() const
+	@property auto addressFamily() const
 		=> name ? cast(AddrFamily)name.sa_family : AddrFamily.unspecified;
 }
 
@@ -704,6 +714,7 @@ static if (is(sockaddr_un)) {
 		private sockaddr_un sun = sockaddr_un(AddrFamily.UNIX, '?');
 		socklen_t nameLen = sun.sizeof;
 
+@safe pure:
 		/++
 		Construct a new `UnixAddr`.
 		Params:
@@ -724,7 +735,7 @@ static if (is(sockaddr_un)) {
 			nameLen = cast(socklen_t)len;
 		}
 
-	pure nothrow @nogc:
+	nothrow @nogc:
 		/++
 		Construct a new `UnixAddr`.
 		Params:

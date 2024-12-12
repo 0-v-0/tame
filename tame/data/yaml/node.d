@@ -74,12 +74,12 @@ struct Node {
 		else
 			typ = NodeType.integer;
 
-		*cast(T*)&p = value;
+		*cast(T*)&b = value;
 	}
 
 	this(T : const(char)[])(in T value) @trusted {
 		typ = NodeType.string;
-		*cast(T*)&p = value;
+		str = value;
 	}
 
 	/// Construct a scalar node
@@ -102,7 +102,7 @@ struct Node {
 		typ = NodeType.sequence;
 	}
 
-	this(in SysTime value) @trusted {
+	this(SysTime value) @trusted {
 		typ = NodeType.timestamp;
 		time = value;
 	}
@@ -171,14 +171,14 @@ struct Node {
 	T get(T)() @trusted const if (isScalarType!T && !is(T == enum)) {
 		switch (typ) with (NodeType) {
 		case boolean:
-			return cast(T)*cast(bool*)&p;
+			return cast(T)b;
 		case integer:
-			return cast(T)*cast(long*)&p;
+			return cast(T)l;
 		case decimal:
-			return cast(T)*cast(double*)&p;
+			return cast(T)d;
 		case string:
 			static if (is(T : const(char)[]))
-				return cast(Unqual!T)(*cast(.string*)&p);
+				return cast(Unqual!T)str;
 		default:
 		}
 		throw new NodeException(text("Cannot convert ", typ, " to " ~ T.stringof), mark_);
@@ -189,11 +189,11 @@ struct Node {
 		case null_:
 			return null;
 		case boolean:
-			return *cast(bool*)&p ? "true" : "false";
+			return b ? "true" : "false";
 		case timestamp:
 			return time.toString();
 		case string:
-			return *cast(T*)&p;
+			return cast(T)str;
 		default:
 		}
 		throw new NodeException(text("Cannot convert ", typ, " to string"), mark_);
@@ -221,7 +221,7 @@ struct Node {
 		assert(i.get!(immutable double) == 42.0);
 	}
 
-	T get(T : SysTime)() const {
+	T get(T : const SysTime)() const {
 		if (typ != NodeType.timestamp)
 			throw new NodeException(text("Cannot convert ", typ, " to timestamp"), mark_);
 		return time;
@@ -406,7 +406,7 @@ struct Node {
 			static if (is(Unqual!T == Node))
 				if (typ == NodeType.string) {
 					typ = NodeType.map;
-					auto key = *cast(string*)&p;
+					auto key = cast(string)str;
 					map = null;
 					map[key] = value;
 					return;
@@ -602,9 +602,9 @@ struct Node {
 
 			return cmp(r1, r2);
 		case NodeType.timestamp:
-			return cmp(time, rhs.as!SysTime);
+			return cmp(time, rhs.as!(const SysTime));
 		case NodeType.string:
-			return scmp(*cast(string*)&p, rhs.as!string);
+			return scmp(str, rhs.as!string);
 		case NodeType.sequence:
 			return compareCollection!(Node[]);
 		case NodeType.map:
@@ -632,11 +632,11 @@ struct Node {
 		case boolean,
 			integer,
 		decimal:
-			return cast(size_t)(~typ ^ *cast(long*)&p);
+			return cast(size_t)(~typ ^ l);
 		case timestamp:
 			return time.toHash();
 		case string:
-			return xxh3_64Of(*cast(.string*)&p);
+			return xxh3_64Of(str);
 		case sequence:
 			size_t hash;
 			foreach (node; children)
@@ -659,10 +659,13 @@ struct Node {
 
 	union {
 	private:
-		ubyte p;
+		bool b;
+		long l;
+		double d;
+		const(char)[] str;
 		Node[] children;
 		Node[string] map;
-		SysTime time;
+		const(SysTime) time;
 	}
 }
 

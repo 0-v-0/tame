@@ -9,7 +9,7 @@ package:
 	static assert(0, "Unsupported platform");
 
 import core.stdc.string : memcmp, memcpy;
-import std.ascii : isWhite;
+import std.ascii : isAlphaNum, isWhite;
 
 nothrow @nogc:
 
@@ -189,7 +189,7 @@ unittest {
 }
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
-auto isAlphabet(in char[] s) {
+auto isAlpha(in char[] s) {
 	foreach (c; s) {
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z'))
 			return false;
@@ -199,9 +199,21 @@ auto isAlphabet(in char[] s) {
 
 ///
 unittest {
-	assert("aBcDEf".isAlphabet == true);
-	assert("ABCd_".isAlphabet == false);
-	assert("ABC12".isAlphabet == false);
+	assert("aBcDEf".isAlpha);
+	assert(!"ABCd_".isAlpha);
+	assert(!"ABC12".isAlpha);
+}
+
+/// Returns: true if the character is alphabets, digits or underscore
+auto isAlphaNum_(dchar c) => isAlphaNum(c) || c == '_';
+
+///
+unittest {
+	assert('a'.isAlphaNum_);
+	assert('A'.isAlphaNum_);
+	assert('0'.isAlphaNum_);
+	assert('_'.isAlphaNum_);
+	assert(!' '.isAlphaNum_);
 }
 
 /// Returns: true if the string starts with a white character

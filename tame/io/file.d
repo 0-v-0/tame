@@ -186,7 +186,7 @@ bool remove(in char[] name) @trusted nothrow @nogc {
 		return DeleteFileW(namew) != 0;
 	} else version (Posix) {
 		mixin TempCStr!name;
-		return remove(namez) == 0;
+		return core.stdc.stdio.remove(namez) == 0;
 	}
 }
 
@@ -226,6 +226,6 @@ auto reopen(in char[] name, in char[] mode, FILE* fp) @trusted {
 
 		mixin TempCStr!name;
 		mixin TempCStr!mode;
-		return freopen(namez, modez);
+		return freopen(namez, modez, fp);
 	}
 }

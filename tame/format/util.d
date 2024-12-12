@@ -115,12 +115,12 @@ template SinkWriter(S, bool field = true) {
 		} else {
 			import std.range : rput = put;
 
-			void put(in char[] str) {
+			void put(in char[] str) @trusted {
 				rput(s, str);
 				advance(cast(uint)str.length);
 			}
 
-			void put(char ch) {
+			void put(char ch) @trusted {
 				rput(s, ch);
 				advance(1);
 			}

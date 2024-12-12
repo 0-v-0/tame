@@ -97,10 +97,10 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 				static if (t.del.length)
 					bool first = true;
 				static if (!isArray!T && isForwardRange!T)
-					auto val = args[j].save();
+					enum r = "args[j].save()";
 				else
-					auto val = args[j];
-				foreach (ref e; val) {
+					enum r = "args[j]";
+				foreach (ref e; mixin(r)) {
 					static if (t.del.length) {
 						if (unlikely(first))
 							first = false;
@@ -111,53 +111,53 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 				}
 			} else static if (is(typeof(t) == FmtSpec)) {
 				enum f = t.type;
-				alias val = args[j];
+				alias v = args[j];
 
 				static if (isStdNullable!T) {
-					if (val.isNull)
+					if (v.isNull)
 						put("null");
 					else
-						advance(s.formatTo(val.get));
+						advance(s.formatTo(v.get));
 				} else static if (f == FMT.STR) {
 					static if ((isArray!T && is(Unqual!(ForeachType!T) == char)))
-						put(val[]);
+						put(v[]);
 					else static if (isInputRange!T && isSomeChar!(ElementEncodingType!T)) {
-						foreach (c; val.byUTF!char)
+						foreach (c; v.byUTF!char)
 							put(c);
 					} else static if (is(T == bool))
-						put(val ? "true" : "false");
+						put(v ? "true" : "false");
 					else static if (is(T == enum)) {
-						auto tmp = enumToStr(val);
+						auto tmp = enumToStr(v);
 						if (unlikely(tmp is null))
-							advance(s.formatTo!(N ~ "(%d)")(val));
+							advance(s.formatTo!(N ~ "(%d)")(v));
 						else
 							put(tmp);
 					} else static if (isTyp!(T, UUID))
-						advance(s.formatValue(val));
+						advance(s.formatValue(v));
 					else static if (isTyp!(T, SysTime))
-						advance(s.formatValue(val));
+						advance(s.formatValue(v));
 					else static if (is(T == TimeOfDay))
-						advance(s.formatTo!"%02d:%02d:%02d"(val.hour, val.minute, val.second));
+						advance(s.formatTo!"%02d:%02d:%02d"(v.hour, v.minute, v.second));
 					else static if (isTyp!(T, Duration))
-						advance(s.formatValue(val));
+						advance(s.formatValue(v));
 					else static if (isArray!T || isInputRange!T) {
-						if (val.empty)
+						if (v.empty)
 							put("[]");
 						else
-							advance(s.formatTo!"[%(%s%|, %)]"(val));
+							advance(s.formatTo!"[%(%s%|, %)]"(v));
 					} else static if (is(T == U*, U)) {
 						static if (isSomeChar!U) {
 							// NOTE: not safe, we can only trust that the provided char pointer is really stringz
-							() @trusted { advance(s.formatTo(fromStringz(val))); }();
+							() @trusted { advance(s.formatTo(fromStringz(v))); }();
 						} else
-							advance(s.formatValue(val));
+							advance(s.formatValue(v));
 					} else static if (is(T == char))
-						put(val);
+						put(v);
 					else static if (isSomeChar!T) {
-						foreach (c; val.only.byUTF!char)
+						foreach (c; v.only.byUTF!char)
 							put(c);
 					} else static if (is(T : ulong))
-						advance(s.formatDecimal(val));
+						advance(s.formatDecimal(v));
 					else static if (isTuple!T) {
 						put("Tuple(");
 						foreach (i, _; T.Types) {
@@ -165,61 +165,61 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 								put(i ? ", " : "");
 							else
 								put((i ? ", " : "") ~ T.fieldNames[i] ~ "=");
-							advance(s.formatTo(val[i]));
+							advance(s.formatTo(v[i]));
 						}
 						put(')');
 					} else static if (is(T : Throwable)) {
+						// HACK: Error: more than one mutable reference of `__param_1`
+						const c = v;
 						advance(s.formatTo!"%s@%s(%d): %s"(
-								T.stringof, val.file, val.line, val.msg));
-					} else static if (is(typeof(val[])))
-						advance(s.formatTo(val[])); // sliceable values
+								T.stringof, c.file, c.line, c.msg));
+					} else static if (is(typeof(v[])))
+						advance(s.formatTo(v[])); // sliceable values
 					else static if (is(T == struct)) {
-						static if (__traits(compiles, (v)@nogc {
+						static if (__traits(compiles, (val)@nogc {
 								auto sw = sinkWrap(s);
-								v.toString(sw);
-							}(val))) {
+								val.toString(sw);
+							}(v))) {
 							// we can use custom defined toString
 							auto sw = sinkWrap(s);
-							val.toString(sw);
+							v.toString(sw);
 							advance(sw.totalLen);
 						} else {
 							static if (hasMember!(T, "toString"))
-								pragma(msg, N ~ " has toString defined, but can't be used with nogcFormatter");
-							{
-								put(N ~ "(");
-							}
+								pragma(msg, N ~ " has toString defined, but can't be used with nFormat");
+							put(N ~ "(");
 							alias Names = FieldNameTuple!T;
-							foreach (i, field; val.tupleof) {
+							foreach (i, field; v.tupleof) {
 								put((i == 0 ? "" : ", ") ~ Names[i] ~ "=");
 								advance(s.formatTo(field));
 							}
 							put(')');
 						}
 					} else static if (is(T : double))
-						advance(s.formatTo!"%g"(val));
+						advance(s.formatTo!"%g"(v));
 					else
 						static assert(0, "Unsupported value type for string format: " ~ N);
 				} else static if (f == FMT.CHR) {
 					static assert(is(T : char), "Requested char format, but provided: " ~ N);
-					write(val);
+					write(v);
 				} else static if (f == FMT.DEC) {
 					static assert(is(T : ulong), "Requested decimal format, but provided: " ~ N);
 					enum fs = formatSpec(f, t.def);
-					advance(s.formatDecimal!(fs.width, fs.fill)(val));
+					advance(s.formatDecimal!(fs.width, fs.fill)(v));
 				} else static if (f == FMT.HEX || f == FMT.UHEX) {
 					static assert(is(T : ulong) || isPointer!T, "Requested hex format, but provided: " ~ N);
 					enum u = f == FMT.HEX ? Upper.yes : Upper.no;
 					enum fs = formatSpec(f, t.def);
 					static if (isPointer!T)
-						advance(s.formatHex!(fs.width, fs.fill, u)(cast(size_t)val));
+						advance(s.formatHex!(fs.width, fs.fill, u)(cast(size_t)v));
 					else
-						advance(s.formatHex!(fs.width, fs.fill, u)(val));
+						advance(s.formatHex!(fs.width, fs.fill, u)(v));
 				} else static if (f == FMT.PTR) {
 					static assert(is(T : ulong) || isPointer!T, "Requested pointer format, but provided: " ~ N);
-					() @trusted { advance(s.formatValue(cast(void*)val)); }();
+					() @trusted { advance(s.formatValue(cast(void*)v)); }();
 				} else static if (f == FMT.FLT) {
 					static assert(is(T : double), "Requested float format, but provided: " ~ N);
-					advance(s.formatValue(val));
+					advance(s.formatValue(v));
 				}
 			} else
 				static assert(0);
@@ -243,7 +243,7 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 	Same as `formatTo`, but it internally uses static malloc buffer to write formatted string to.
 	So be careful that next call replaces internal buffer data and previous result isn't valid anymore.
 +/
-const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @trusted {
+const(char)[] nFormat(string fmt = "%s", A...)(auto ref scope A args) @trusted {
 	globalSink.clear();
 	formatTo!fmt(globalSink, args);
 	return cast(const(char)[])globalSink.data;
@@ -254,8 +254,8 @@ const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @truste
 	import std.algorithm : filter;
 	import std.range : chunks;
 
-	assert(nogcFormat!"abcd abcd" == "abcd abcd");
-	assert(nogcFormat!"123456789a" == "123456789a");
+	assert(nFormat!"abcd abcd" == "abcd abcd");
+	assert(nFormat!"123456789a" == "123456789a");
 	version (D_NoBoundsChecks) {
 	} else version (D_Exceptions) {
 		() @trusted {
@@ -268,70 +268,70 @@ const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @truste
 	}
 
 	// literal escape
-	assert(nogcFormat!"123 %%" == "123 %");
-	assert(nogcFormat!"%%%%" == "%%");
+	assert(nFormat!"123 %%" == "123 %");
+	assert(nFormat!"%%%%" == "%%");
 
 	// %d
-	assert(nogcFormat!"%d"(1234) == "1234");
-	assert(nogcFormat!"%4d"(42) == "  42");
-	assert(nogcFormat!"%04d"(42) == "0042");
-	assert(nogcFormat!"%04d"(-42) == "-042");
-	assert(nogcFormat!"ab%dcd"(1234) == "ab1234cd");
-	assert(nogcFormat!"ab%d%d"(1234, 56) == "ab123456");
+	assert(nFormat!"%d"(1234) == "1234");
+	assert(nFormat!"%4d"(42) == "  42");
+	assert(nFormat!"%04d"(42) == "0042");
+	assert(nFormat!"%04d"(-42) == "-042");
+	assert(nFormat!"ab%dcd"(1234) == "ab1234cd");
+	assert(nFormat!"ab%d%d"(1234, 56) == "ab123456");
 
 	// %x
-	assert(nogcFormat!"0x%x"(0x1234) == "0x1234");
+	assert(nFormat!"0x%x"(0x1234) == "0x1234");
 
 	// %p
-	assert(nogcFormat!"%p"(0x1234) == "0000000000001234");
+	assert(nFormat!"%p"(0x1234) == "0000000000001234");
 
 	// %s
-	assert(nogcFormat!"12345%s"("12345") == "1234512345");
-	assert(nogcFormat!"123%s"(123) == "123123");
-	assert(nogcFormat!"12345%s"(FMT.HEX) == "12345HEX");
+	assert(nFormat!"12345%s"("12345") == "1234512345");
+	assert(nFormat!"123%s"(123) == "123123");
+	assert(nFormat!"12345%s"(FMT.HEX) == "12345HEX");
 	char[4] str = "foo\0";
-	assert((() => nogcFormat(str.ptr))() == "foo");
+	assert((() => nFormat(str.ptr))() == "foo");
 
 	static if (is(UUID))
-		assert(nogcFormat(
+		assert(nFormat(
 				UUID([
 				138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189,
 				251, 70
 	])) == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
 
 	// array format
-	int[10] array = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-	int[] arr = array[];
+	int[10] arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-	assert(nogcFormat!"foo %(%d %)"(arr[1 .. 4]) == "foo 1 2 3");
-	assert(nogcFormat!"foo %-(%d %)"(arr[1 .. 4]) == "foo 1 2 3");
-	assert(nogcFormat!"foo %(-%d-%|, %)"(arr[1 .. 4]) == "foo -1-, -2-, -3-");
-	assert(nogcFormat!"%(0x%02x %)"(arr[1 .. 4]) == "0x01 0x02 0x03");
-	assert(nogcFormat!"%(%(%d %)\n%)"(arr[1 .. $].chunks(3)) == "1 2 3\n4 5 6\n7 8 9");
+	assert(nFormat!"foo %(%d %)"(arr[1 .. 4]) == "foo 1 2 3");
+	assert(nFormat!"foo %-(%d %)"(arr[1 .. 4]) == "foo 1 2 3");
+	assert(nFormat!"foo %(-%d-%|, %)"(arr[1 .. 4]) == "foo -1-, -2-, -3-");
+	assert(nFormat!"%(0x%02x %)"(arr[1 .. 4]) == "0x01 0x02 0x03");
+	// BUG: cannot call Chunks.save() on const range
+	assert(nFormat!"%(%(%d %)\n%)"(arr[1 .. $].chunks(3)) == "1 2 3\n4 5 6\n7 8 9");
 
 	// range format
-	auto r = arr.filter!(a => a < 5);
-	assert(nogcFormat!"%s"(r) == "[0, 1, 2, 3, 4]");
+	auto r = arr[].filter!(a => a < 5);
+	assert(nFormat!"%s"(r) == "[0, 1, 2, 3, 4]");
 
 	// Arg num
-	assert(!__traits(compiles, nogcFormat!"abc"(5)));
-	assert(!__traits(compiles, nogcFormat!"%d"()));
-	assert(!__traits(compiles, nogcFormat!"%d a %d"(5)));
+	assert(!__traits(compiles, nFormat!"abc"(5)));
+	assert(!__traits(compiles, nFormat!"%d"()));
+	assert(!__traits(compiles, nFormat!"%d a %d"(5)));
 
 	// Format error
-	assert(!__traits(compiles, nogcFormat!"%"()));
-	assert(!__traits(compiles, nogcFormat!"abcd%d %"(15)));
-	assert(!__traits(compiles, nogcFormat!"%$"(1)));
-	assert(!__traits(compiles, nogcFormat!"%d"("hello")));
-	assert(!__traits(compiles, nogcFormat!"%x"("hello")));
+	assert(!__traits(compiles, nFormat!"%"()));
+	assert(!__traits(compiles, nFormat!"abcd%d %"(15)));
+	assert(!__traits(compiles, nFormat!"%$"(1)));
+	assert(!__traits(compiles, nFormat!"%d"("hello")));
+	assert(!__traits(compiles, nFormat!"%x"("hello")));
 
-	assert(nogcFormat!"Hello %s"(5) == "Hello 5");
+	assert(nFormat!"Hello %s"(5) == "Hello 5");
 
 	struct Foo {
 		int x, y;
 	}
 
-	assert(nogcFormat!"Hello %s"(Foo(1, 2)) == "Hello Foo(x=1, y=2)");
+	assert(nFormat!"Hello %s"(Foo(1, 2)) == "Hello Foo(x=1, y=2)");
 
 	version (D_BetterC) {
 		struct Nullable(T) { // can't be instanciated in betterC - fake just for the UT
@@ -349,10 +349,10 @@ const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @truste
 		Nullable!string foo;
 	}
 
-	assert(nogcFormat(Msg.init) == "Msg(foo=null)");
+	assert(nFormat(Msg.init) == "Msg(foo=null)");
 
 	StringSink s = "abcd";
-	assert(nogcFormat(s) == "abcd");
+	assert(nFormat(s) == "abcd");
 }
 
 ///
@@ -360,12 +360,12 @@ const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @truste
 	{
 		alias T = Tuple!(int, "foo", bool);
 		T t = T(42, true);
-		assert(nogcFormat(t) == "Tuple(foo=42, true)");
+		assert(nFormat(t) == "Tuple(foo=42, true)");
 	}
 
 	alias T = Tuple!(int, "foo", string, "bar", char, "baz");
 	T t = T(42, "bar", 'z');
-	assert(nogcFormat(t) == "Tuple(foo=42, bar=bar, baz=z)");
+	assert(nFormat(t) == "Tuple(foo=42, bar=bar, baz=z)");
 }
 
 ///
@@ -380,7 +380,7 @@ const(char)[] nogcFormat(string fmt = "%s", A...)(auto ref scope A args) @truste
 
 	Custom c;
 	enum result = "custom: foo=42";
-	assert(nogcFormat(c) == result);
+	assert(nFormat(c) == result);
 	assert(getFormatSize(c) == result.length);
 
 	char[64] buf;

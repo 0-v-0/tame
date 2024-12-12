@@ -6,7 +6,7 @@ import core.atomic : MemoryOrder, CAS = cas;
 private alias cas = CAS!(MemoryOrder.raw, MemoryOrder.raw);
 
 shared struct LockFreeQueue(T) {
-	this(T payload) {
+	this(T payload) @trusted {
 		head = tail = new Node(payload);
 	}
 

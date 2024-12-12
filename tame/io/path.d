@@ -133,26 +133,6 @@ auto stripDrive(return scope const char[] path) {
 	return path;
 }
 
-ptrdiff_t uncRootLength(in char[] path)
-in (isUNC(path)) {
-	ptrdiff_t i = 3;
-	while (i < path.length && !isDirSeparator(path[i]))
-		++i;
-	if (i < path.length) {
-		auto j = i;
-		do
-			++j;
-		while (j < path.length && isDirSeparator(path[j]));
-		if (j < path.length) {
-			do
-				++j;
-			while (j < path.length && !isDirSeparator(path[j]));
-			i = j;
-		}
-	}
-	return i;
-}
-
 bool hasDrive(in char[] path) {
 	return path.length >= 2 && isDriveSeparator(path[1]);
 }
@@ -203,5 +183,25 @@ version (Windows) {
 	bool isUNC(in char[] path) {
 		return path.length >= 3 && isDirSeparator(path[0]) && isDirSeparator(path[1])
 			&& !isDirSeparator(path[2]);
+	}
+
+	ptrdiff_t uncRootLength(in char[] path)
+	in (isUNC(path)) {
+		ptrdiff_t i = 3;
+		while (i < path.length && !isDirSeparator(path[i]))
+			++i;
+		if (i < path.length) {
+			auto j = i;
+			do
+				++j;
+			while (j < path.length && isDirSeparator(path[j]));
+			if (j < path.length) {
+				do
+					++j;
+				while (j < path.length && !isDirSeparator(path[j]));
+				i = j;
+			}
+		}
+		return i;
 	}
 }

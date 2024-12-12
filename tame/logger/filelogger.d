@@ -17,7 +17,7 @@ auto fileLogger(File f, LogLevel levels = LogLevel.default_) {
 	}, levels);
 }
 
-auto stderrLogger(LogLevel levels = LogLevel.warning.orAbove)
+auto stderrLogger(LogLevel levels = LogLevel.info.orAbove)
 	=> fileLogger(stderr, levels);
 
 auto stdoutLogger(LogLevel levels = LogLevel.info.orAbove)
