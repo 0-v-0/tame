@@ -537,7 +537,7 @@ struct Node {
 		import std.math;
 		import std.algorithm.comparison : scmp = cmp;
 
-		static int cmp(T, U)(T a, U b) => a > b ? 1 : a < b ? -1 : 0;
+		static int cmp(T)(T a, T b) => a > b ? 1 : a < b ? -1 : 0;
 
 		// Compare validity: if both valid, we have to compare further.
 		const v1 = empty;
@@ -548,36 +548,36 @@ struct Node {
 			return 1;
 
 		const typeCmp = cmp(type, rhs.type);
-		if (typeCmp != 0)
+		if (typeCmp)
 			return typeCmp;
 
-		int compareCollection(T)() {
-			const c1 = as!T;
-			const c2 = rhs.as!T;
-			if (c1 is c2)
+		int cmpCollection(T)() {
+			const a = as!T;
+			const b = rhs.as!T;
+			if (a is b)
 				return 0;
-			if (c1.length != c2.length)
-				return cmp(c1.length, c2.length);
+			if (a.length != b.length)
+				return cmp(a.length, b.length);
+
 			// Equal lengths, compare items.
 			static if (is(T : Node[]))
-				foreach (i; 0 .. c1.length) {
-					const itemCmp = c1[i].opCmp(c2[i]);
+				foreach (i; 0 .. a.length) {
+					const itemCmp = a[i].opCmp(b[i]);
 					if (itemCmp)
 						return itemCmp;
 				}
 			else {
 				size_t i;
-				const keys = c2.keys;
-				foreach (k, v; c1) {
+				const keys = b.keys;
+				foreach (k, v; a) {
 					const keyCmp = scmp(k, keys[i]);
 					if (keyCmp) {
-						const valCmp = v.opCmp(c2[keys[i]]);
+						const valCmp = v.opCmp(b[keys[i]]);
 						if (valCmp)
 							return valCmp;
 					}
 				}
 			}
-
 			return 0;
 		}
 
@@ -588,38 +588,38 @@ struct Node {
 			NodeType.integer:
 			return cmp(as!long, rhs.as!long);
 		case NodeType.decimal:
-			const r1 = as!double;
-			const r2 = rhs.as!double;
-			if (isNaN(r1))
-				return isNaN(r2) ? 0 : -1;
+			const a = as!double;
+			const b = rhs.as!double;
+			if (isNaN(a))
+				return isNaN(b) ? 0 : -1;
 
-			if (isNaN(r2))
+			if (isNaN(b))
 				return 1;
 
 			// Fuzzy equality.
-			if (r1 <= r2 + double.epsilon && r1 >= r2 - double.epsilon)
+			if (a <= b + double.epsilon && a >= b - double.epsilon)
 				return 0;
 
-			return cmp(r1, r2);
+			return cmp(a, b);
 		case NodeType.timestamp:
 			return cmp(time, rhs.as!(const SysTime));
 		case NodeType.string:
 			return scmp(str, rhs.as!string);
 		case NodeType.sequence:
-			return compareCollection!(Node[]);
+			return cmpCollection!(Node[]);
 		case NodeType.map:
-			return compareCollection!(Node[string]);
+			return cmpCollection!(Node[string]);
 		default:
-			assert(0, text("Cannot compare ", typ, " nodes"));
 		}
+		assert(0, text("Cannot compare ", typ, " nodes"));
 	}
 
 	// Ensure opCmp is symmetric for collections
 	@safe unittest {
-		auto n1 = Node(["New York Yankees", "Atlanta Braves"]);
-		auto n2 = Node(["Detroit Tigers", "Chicago cubs"]);
-		assert(n1 > n2);
-		assert(n2 < n1);
+		auto a = Node(["New York Yankees", "Atlanta Braves"]);
+		auto b = Node(["Detroit Tigers", "Chicago cubs"]);
+		assert(a > b);
+		assert(b < a);
 	}
 
 	// Compute hash of the node.
@@ -631,7 +631,7 @@ struct Node {
 			return 0;
 		case boolean,
 			integer,
-		decimal:
+			decimal:
 			return cast(size_t)(~typ ^ l);
 		case timestamp:
 			return time.toHash();
@@ -674,14 +674,14 @@ struct Node {
 	import std.exception;
 
 	Node n1 = Node([1, 2, 3, 4]);
-	Node n2 = Node(cast(int[string])null);
+	Node aa = Node(cast(int[string])null);
 	const n3 = Node([1, 2, 3, 4]);
 
 	auto r = n1.get!(Node[])
 		.map!(x => x.as!int * 10);
 	assert(r.equal([10, 20, 30, 40]));
 
-	assertThrown(n2.get!(Node[]));
+	assertThrown(aa.get!(Node[]));
 
 	auto r2 = n3.get!(Node[])
 		.map!(x => x.as!int * 10);

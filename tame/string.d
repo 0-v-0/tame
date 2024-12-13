@@ -9,7 +9,7 @@ pure nothrow @nogc @safe:
 struct Splitter(bool keepSeparators = false, S:
 	C[], C) if (C.sizeof == 1) {
 	S s;
-	size_t frontLen;
+	private size_t frontLen;
 	C sep;
 
 	this(S input, C separator) {

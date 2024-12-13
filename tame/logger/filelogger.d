@@ -25,7 +25,7 @@ auto stdoutLogger(LogLevel levels = LogLevel.info.orAbove)
 
 private:
 
-void toISOString(R)(R o, in SysTime time) {
+void toISOString(R)(ref scope R o, in SysTime time) {
 	const dt = cast(DateTime)time;
 	const fsec = time.fracSecs.total!"msecs";
 

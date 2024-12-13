@@ -6,7 +6,7 @@ tame.io.file;
 
 // Undocumented but public because the std* handles are aliasing it.
 @property ref File makeGlobal(alias fd)() {
-	__gshared File result;
+	__gshared File file;
 
 	enum N = uint.max / 2;
 	// Use an inline spinlock to make sure the initializer is only run once.
@@ -21,14 +21,14 @@ tame.io.file;
 			if (atomicLoad!(MemoryOrder.acq)(spinlock) > N)
 				break;
 			if (atomicOp!"+="(spinlock, 1) == 1) {
-				result.handle = fd;
+				file.handle = fd;
 				atomicOp!"+="(spinlock, N);
 				break;
 			}
 			atomicOp!"-="(spinlock, 1);
 		}
 	}
-	return result;
+	return file;
 }
 
 /** The standard input stream.

@@ -24,6 +24,42 @@ nothrow @nogc:
 		handle = open(name, mode);
 	}
 
+	this(int fd, in char[] mode = "rb") {
+		version (CRuntime_Microsoft) {
+			alias fdopen = _fdopen;
+		} else version (Posix) {
+			import core.sys.posix.stdio : fdopen;
+		}
+		mixin TempCStr!mode;
+
+		handle = fdopen(fd, modez);
+	}
+
+	version (Windows) {
+		this(HANDLE h, in char[] mode = "rb") {
+			// Create file descriptors from the handles
+			const fd = _open_osfhandle(cast(INT_PTR)h, toFlags(mode));
+			this(fd, mode);
+		}
+
+		private static int toFlags(in char[] mode) {
+			int m;
+			// dfmt off
+			modeLoop: foreach (c; mode)
+				switch (c) {
+					case 'r': m |= _O_RDONLY; break;
+					case '+': m &=~_O_RDONLY; break;
+					case 'a': m |= _O_APPEND; break;
+					case 'b': m |= _O_BINARY; break;
+					case 't': m |= _O_TEXT;   break;
+					case ',': break modeLoop;
+					default:
+				}
+			// dfmt on
+			return m;
+		}
+	}
+
 	void reopen(in char[] name, in char[] mode = "rb") {
 		handle = .reopen(name, mode, handle);
 	}
@@ -64,7 +100,23 @@ nothrow @nogc:
 		return fflush(handle) == 0;
 	}
 
-	void seek(long offset, int origin = SEEK_SET) @trusted
+	bool sync() @trusted {
+		version (Windows) {
+			import core.sys.windows.winbase : FlushFileBuffers;
+
+			return FlushFileBuffers(toHandle) != 0;
+		} else version (Darwin) {
+			import core.sys.darwin.fcntl : fcntl, F_FULLFSYNC;
+
+			return fcntl(fileno, F_FULLFSYNC, 0) != -1;
+		} else {
+			import core.sys.posix.unistd : fsync;
+
+			return fsync(fileno) == 0;
+		}
+	}
+
+	bool seek(long offset, int origin = SEEK_SET) @trusted
 	in (isOpen, "file is not open") {
 		version (Windows) {
 			version (CRuntime_Microsoft) {
@@ -75,11 +127,17 @@ nothrow @nogc:
 				alias off_t = int;
 			}
 		} else version (Posix) {
-			import core.sys.posix.stdio : fseeko, off_t;
-
-			alias fseekF = fseeko;
+			import core.sys.posix.stdio : fseekF = fseeko, off_t;
 		}
-		fseekF(handle, cast(off_t)offset, origin);
+		return fseekF(handle, cast(off_t)offset, origin) == 0;
+	}
+
+	void clearerr() @safe pure nothrow {
+		isOpen && .clearerr(handle);
+	}
+
+	auto byLine(char terminator = '\n', bool keepTerminator = false) {
+		return ByTerminator!1024(this, terminator, keepTerminator);
 	}
 
 	@property @safe const {
@@ -98,19 +156,31 @@ nothrow @nogc:
 		in (isOpen, "file is not open") {
 			version (Windows) {
 				version (CRuntime_Microsoft)
-					return _ftelli64(cast(FILE*)handle);
+					alias ftellF = _ftelli64;
 				else
-					return ftell(cast(FILE*)handle);
+					alias ftellF = ftell;
 			} else version (Posix) {
-				import core.sys.posix.stdio : ftello;
-
-				return ftello(cast(FILE*)handle);
+				import core.sys.posix.stdio : ftellF = ftello;
 			}
+			return ftellF(cast(FILE*)handle);
+		}
+
+		int fileno() @trusted pure
+		in (isOpen, "file is not open") {
+			return .fileno(cast(FILE*)handle);
+		}
+
+		version (Windows) auto toHandle() @trusted {
+			import core.stdc.stdio : _get_osfhandle;
+
+			return isOpen ? cast(HANDLE)_get_osfhandle(fileno) : null;
 		}
 	}
 
-	@property long size() @trusted
-	in (isOpen, "file is not open") {
+	@property long size() @trusted {
+		if (!isOpen)
+			return -1;
+
 		long pos = tell;
 		seek(0, SEEK_END);
 		long size = tell;
@@ -187,6 +257,55 @@ bool remove(in char[] name) @trusted nothrow @nogc {
 	} else version (Posix) {
 		mixin TempCStr!name;
 		return core.stdc.stdio.remove(namez) == 0;
+	}
+}
+
+struct ByTerminator(uint N = 1024) {
+nothrow @nogc:
+	private File f;
+	char[N] buf = void;
+	char[] data;
+	private size_t frontLen;
+	char terminator;
+	bool keepTerminator;
+
+	this(File file, char term, bool keepTerm = false) @safe {
+		f = file;
+		terminator = term;
+		keepTerminator = keepTerm;
+	}
+
+	@disable this(this);
+
+	void read() @trusted {
+		import core.stdc.string : memchr;
+
+		if (!frontLen) {
+			data = cast(char[])f.read(buf);
+			if (data.length) {
+				const p = memchr(data.ptr, terminator, data.length);
+				frontLen = p ? p - cast(void*)data.ptr + keepTerminator : data.length;
+			}
+		}
+	}
+
+	@property auto file() pure => f;
+
+	@property bool empty() @trusted {
+		read();
+		return data.length == 0;
+	}
+
+	@property auto front() @trusted
+		=> data[0 .. frontLen];
+
+	void popFront() {
+		if (keepTerminator) {
+			data = data[frontLen .. $];
+		} else {
+			data = data[frontLen + (frontLen < data.length) .. $];
+		}
+		frontLen = 0;
 	}
 }
 

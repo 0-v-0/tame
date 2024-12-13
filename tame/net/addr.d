@@ -783,12 +783,12 @@ static if (is(sockaddr_un)) {
 			names ~= "\0" ~ basePath ~ "-abstract\0unix\0socket";
 
 		foreach (name; names) {
-			auto address = UnixAddr(name);
+			auto addr = UnixAddr(name);
 
 			auto listener = Socket(AddrFamily.UNIX, SocketType.stream);
 			scope (exit)
 				listener.close();
-			listener.bind(address);
+			listener.bind(addr);
 			scope (exit)
 				() @trusted {
 				if (name[0])
@@ -802,7 +802,7 @@ static if (is(sockaddr_un)) {
 			scope (exit)
 				listener.close();
 
-			pair[0].connect(address);
+			pair[0].connect(addr);
 			scope (exit)
 				pair[0].close();
 
@@ -820,7 +820,7 @@ static if (is(sockaddr_un)) {
 			// domain socket pair or unbound socket. Let's confirm it
 			// returns successfully and doesn't throw anything.
 			// See https://issues.dlang.org/show_bug.cgi?id=20544
-			assertNotThrown(pair[1].remoteAddr.toString());
+			pair[1].remoteAddr.toString();
 		}
 	}
 }

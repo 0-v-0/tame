@@ -28,7 +28,7 @@ ulong convert(T)(const T[] digits, uint radix = 10, size_t* ate = null) {
 	return value;
 }
 
-size_t intToStr(char* buf, size_t value) pure @nogc nothrow @trusted {
+size_t intToStr(char* buf, ulong value) pure @nogc nothrow @trusted {
 	char* p = buf;
 	do
 		*p++ = value % 10 ^ '0';

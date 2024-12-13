@@ -2,13 +2,14 @@ module tame.unsafe.string;
 
 nothrow @nogc:
 
-template TempDup(alias s, string name = s.stringof ~ "d") {
+template TempDup(alias s, string name = s.stringof ~ "d") if (is(typeof(s) : T[], T)) {
 	import core.stdc.stdlib;
 	import core.stdc.string;
 	import std.traits : Unqual;
 
-	mixin("auto ", name,
-		"= (cast(Unqual!(typeof(s[0]))*)memcpy(alloca(s.length), s.ptr, s.length))[0 .. s.length];");
+	static if (is(typeof(s) : T[], T))
+		mixin("auto ", name, "= (cast(Unqual!T*)memcpy(",
+			"alloca(s.length * T.sizeof), s.ptr, s.length * T.sizeof))[0 .. s.length];");
 }
 
 unittest {
@@ -17,7 +18,8 @@ unittest {
 	assert(sd == "hello", sd);
 }
 
-template TempCStr(alias s, string name = s.stringof ~ "z") {
+template TempCStr(alias s, string name = s.stringof ~ "z")
+if (is(typeof(s) : const(char)[])) {
 	import core.stdc.stdlib;
 	import core.stdc.string;
 
@@ -39,7 +41,11 @@ version (Windows) {
 	template TempWCStr(alias s, string name = s.stringof ~ "w") {
 		import core.stdc.stdlib;
 
-		mixin TempCStr!(s, "strz");
+		static if (is(typeof(s) : const(char)[])) {
+			mixin TempCStr!(s, "strz");
+		} else {
+			alias strz = s;
+		}
 
 		// Find out how many characters there is to convert to UTF-16
 		int reqLen = MultiByteToWideChar(CP_UTF8, 0, strz, -1, null, 0);
