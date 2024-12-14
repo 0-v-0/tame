@@ -23,7 +23,7 @@ struct Node(K, V) {
 			next.rehash();
 	}
 
-	V get(scope const K key) nothrow {
+	V get(in K key) nothrow {
 		if (auto ret = key in aa)
 			return *ret;
 		return next ? next.get(key) : V.init;
@@ -35,10 +35,10 @@ struct Node(K, V) {
 		@property {
 			auto opDispatch(K key)() => get(key);
 
-			auto opDispatch(K key)(scope const V value) => aa[key] = value;
+			auto opDispatch(K key)(in V value) => aa[key] = value;
 		}
 
-	V* opBinaryRight(string op : "in")(scope const K key) {
+	V* opBinaryRight(string op : "in")(in K key) {
 		if (auto ret = key in aa)
 			return ret;
 		if (next)
@@ -46,7 +46,7 @@ struct Node(K, V) {
 		return null;
 	}
 
-	bool remove(scope const K key) @nogc nothrow {
+	bool remove(in K key) @nogc nothrow {
 		bool result = aa.remove(key);
 		return (next && next.remove(key)) || result;
 	}

@@ -3,7 +3,7 @@ module tame.data.yaml.node;
 import tame.data.yaml.util;
 
 enum NodeType {
-	null_,
+	nil,
 	merge,
 	boolean,
 	integer,
@@ -14,6 +14,8 @@ enum NodeType {
 	map,
 	sequence
 }
+
+@safe:
 
 /// Exception thrown at node related errors.
 // Construct a NodeException.
@@ -40,7 +42,7 @@ struct Node {
 	package NodeType typ;
 	package Mark mark_;
 
-	@property @safe pure @nogc nothrow const {
+	@property pure @nogc nothrow const {
 
 		NodeType type() => typ;
 
@@ -48,7 +50,7 @@ struct Node {
 
 		bool empty() @trusted {
 			switch (typ) {
-			case NodeType.null_,
+			case NodeType.nil,
 				NodeType.merge:
 				return true;
 			case NodeType.sequence:
@@ -61,11 +63,11 @@ struct Node {
 		}
 	}
 
-	this(typeof(null)) {
-		typ = NodeType.null_;
+	this(typeof(null)) pure {
+		typ = NodeType.nil;
 	}
 
-	this(T)(T value) @trusted if (isScalarType!T) {
+	this(T)(T value) @trusted pure if (isScalarType!T) {
 		static if (isFloatingPoint!T) {
 			typ = NodeType.decimal;
 			alias T = double;
@@ -83,7 +85,7 @@ struct Node {
 	}
 
 	/// Construct a scalar node
-	@safe unittest {
+	unittest {
 		auto Integer = Node(5);
 		auto String = Node("Hello world!");
 		auto Float = Node(5.0f);
@@ -102,12 +104,12 @@ struct Node {
 		typ = NodeType.sequence;
 	}
 
-	this(SysTime value) @trusted {
+	this(SysTime value) @trusted pure {
 		typ = NodeType.timestamp;
 		time = value;
 	}
 
-	this(T)(T value) @trusted if (is(T : V[string], V)) {
+	this(T)(T value) @trusted pure if (is(T : V[string], V)) {
 		static if (is(Unqual!T : Node[string]))
 			map = value;
 		else
@@ -117,43 +119,41 @@ struct Node {
 	}
 
 	/// Construct a map node
-	@safe unittest {
+	pure unittest {
 		auto map = Node(["1": "a", "2": "b"]);
 	}
 
-	@safe {
-		/// Construct a sequence node
-		unittest {
-			// Will be emitted as a sequence (default for arrays)
-			auto seq = Node([1, 2, 3, 4, 5]);
-			// Can also store arrays of arrays
-			auto node = Node([[1, 2], [3, 4]]);
+	/// Construct a sequence node
+	pure unittest {
+		// Will be emitted as a sequence (default for arrays)
+		auto seq = Node([1, 2, 3, 4, 5]);
+		// Can also store arrays of arrays
+		auto node = Node([[1, 2], [3, 4]]);
+	}
+
+	unittest {
+		auto a = Node(42);
+		assert(a.type == NodeType.integer);
+		assert(a.as!int == 42 && a.as!float == 42.0f);
+
+		auto b = Node("foo");
+		assert(b.as!string == "foo");
+	}
+
+	unittest {
+		with (Node([1, 2, 3])) {
+			assert(typ == NodeType.sequence);
+			assert(length == 3);
+			assert(opIndex(2).as!int == 3);
 		}
+	}
 
-		unittest {
-			auto a = Node(42);
-			assert(a.type == NodeType.integer);
-			assert(a.as!int == 42 && a.as!float == 42.0f);
-
-			auto b = Node("foo");
-			assert(b.as!string == "foo");
-		}
-
-		unittest {
-			with (Node([1, 2, 3])) {
-				assert(typ == NodeType.sequence);
-				assert(length == 3);
-				assert(opIndex(2).as!int == 3);
-			}
-		}
-
-		unittest {
-			auto a = ["1": 1, "2": 2];
-			with (Node(a)) {
-				assert(type == NodeType.map);
-				assert(length == 2);
-				assert(opIndex("2").as!int == 2);
-			}
+	unittest {
+		auto a = ["1": 1, "2": 2];
+		with (Node(a)) {
+			assert(type == NodeType.map);
+			assert(length == 2);
+			assert(opIndex("2").as!int == 2);
 		}
 	}
 
@@ -186,7 +186,7 @@ struct Node {
 
 	T get(T : const(char)[])() @trusted const if (!is(T == enum)) {
 		switch (typ) with (NodeType) {
-		case null_:
+		case nil:
 			return null;
 		case boolean:
 			return b ? "true" : "false";
@@ -199,7 +199,7 @@ struct Node {
 		throw new NodeException(text("Cannot convert ", typ, " to string"), mark_);
 	}
 
-	@safe unittest {
+	unittest {
 		const c = Node(42);
 		assert(c.get!int == 42);
 		try {
@@ -221,14 +221,14 @@ struct Node {
 		assert(i.get!(immutable double) == 42.0);
 	}
 
-	T get(T : const SysTime)() const {
+	T get(T : const SysTime)() const @trusted {
 		if (typ != NodeType.timestamp)
 			throw new NodeException(text("Cannot convert ", typ, " to timestamp"), mark_);
 		return time;
 	}
 
 	const(T) get(T : const(Node)[])() const @trusted if (!is(T == enum)) {
-		if (typ == NodeType.null_)
+		if (typ == NodeType.nil)
 			return null;
 		if (typ != NodeType.sequence)
 			throw new NodeException(text("Cannot convert ", typ, " to array"), mark_);
@@ -236,7 +236,7 @@ struct Node {
 	}
 
 	const(T) get(T : const(Node[string]))() const @trusted if (!is(T == enum)) {
-		if (typ == NodeType.null_)
+		if (typ == NodeType.nil)
 			return null;
 		if (typ != NodeType.map)
 			throw new NodeException(text("Cannot convert ", typ, " to map"), mark_);
@@ -251,7 +251,7 @@ struct Node {
 		return m;
 	}
 
-	@safe unittest {
+	unittest {
 		assertThrown(Node("foo").get!int);
 		assertThrown(Node("4.2").get!int);
 	}
@@ -273,13 +273,13 @@ struct Node {
 		return 0;
 	}
 
-	@safe unittest {
-		auto node = Node([1, 2, 3]);
-		assert(node.length == 3);
-		const cNode = Node([1, 2, 3]);
-		assert(cNode.length == 3);
-		immutable iNode = Node([1, 2, 3]);
-		assert(iNode.length == 3);
+	pure unittest {
+		auto m = Node([1, 2, 3]);
+		assert(m.length == 3);
+		const c = Node([1, 2, 3]);
+		assert(c.length == 3);
+		immutable i = Node([1, 2, 3]);
+		assert(i.length == 3);
 	}
 
 	auto ref opIndex(T)(T index) const @trusted {
@@ -300,7 +300,7 @@ struct Node {
 	//@property opDispatch(string s)() => opIndex(s);
 
 	///
-	unittest {
+	@system unittest {
 		import core.exception;
 
 		Node arr = Node([11, 12, 13, 14]);
@@ -312,7 +312,7 @@ struct Node {
 		assert(map["14"].as!int == 14);
 	}
 
-	unittest {
+	@system unittest {
 		import core.exception;
 
 		Node arr = Node([11, 12, 13, 14]);
@@ -393,7 +393,7 @@ struct Node {
 	 *
 	 * $(P When emitting, all values in the sequence will be emitted. When
 	 * using the !!set tag, the user needs to ensure that all elements in
-	 * the sequence are unique, otherwise $(B null_) YAML code will be
+	 * the sequence are unique, otherwise $(B nil) YAML code will be
 	 * emitted.)
 	 *
 	 * Params:  value = Value to _add to the sequence.
@@ -421,7 +421,7 @@ struct Node {
 			children ~= Node(value);
 	}
 
-	@safe unittest {
+	unittest {
 		with (Node([1, 2, 3, 4])) {
 			add(5.0f);
 			assert(opIndex(4).as!float == 5.0f);
@@ -448,7 +448,7 @@ struct Node {
 	 * $(P It is possible for the same key to be present more than once in a
 	 * map. When emitting, all key-value pairs will be emitted.
 	 * This is useful with the "!!pairs" tag, but will result in
-	 * $(B null_) YAML with "!!map" and "!!omap" tags.)
+	 * $(B nil) YAML with "!!map" and "!!omap" tags.)
 	 *
 	 * Params:  key   = Key to _add.
 	 *          value = Value to _add.
@@ -466,7 +466,7 @@ struct Node {
 			map[cast(string)key] = Node(value);
 	}
 
-	@safe unittest {
+	unittest {
 		with (Node(["1", "2"], [3, 4])) {
 			add("5", "6");
 			assert(opIndex("5").as!string == "6");
@@ -505,7 +505,7 @@ struct Node {
 		return null;
 	}
 
-	@safe unittest {
+	unittest {
 		auto map = Node(["foo", "baz"], ["bar", "qux"]);
 		assert("bad" !in map);
 		auto foo = "foo" in map;
@@ -521,7 +521,7 @@ struct Node {
 		assert("2" in iNode);
 	}
 
-	@safe unittest {
+	unittest {
 		auto mNode = Node(["a": 2]);
 		assert("a" in mNode);
 		const cNode = Node(["a": 2]);
@@ -530,7 +530,7 @@ struct Node {
 		assert("a" in iNode);
 	}
 
-	bool opEquals(const Node rhs) const @safe => opCmp(rhs) == 0;
+	bool opEquals(const Node rhs) const => opCmp(rhs) == 0;
 
 	/// Compare with another _node.
 	int opCmp(const ref Node rhs) const @trusted {
@@ -582,7 +582,7 @@ struct Node {
 		}
 
 		switch (typ) {
-		case NodeType.null_:
+		case NodeType.nil:
 			return 0;
 		case NodeType.boolean,
 			NodeType.integer:
@@ -615,7 +615,7 @@ struct Node {
 	}
 
 	// Ensure opCmp is symmetric for collections
-	@safe unittest {
+	unittest {
 		auto a = Node(["New York Yankees", "Atlanta Braves"]);
 		auto b = Node(["Detroit Tigers", "Chicago cubs"]);
 		assert(a > b);
@@ -627,11 +627,11 @@ struct Node {
 		import tame.hash.xxh3;
 
 		switch (typ) with (NodeType) {
-		case null_:
+		case nil:
 			return 0;
 		case boolean,
 			integer,
-			decimal:
+		decimal:
 			return cast(size_t)(~typ ^ l);
 		case timestamp:
 			return time.toHash();
@@ -648,11 +648,11 @@ struct Node {
 				hash ^= (xxh3_64Of(key) << 5) + (value.toHash() ^ 0x38495ab5);
 			return hash;
 		default:
-			assert(0, "Unsupported node type");
 		}
+		assert(0, "Unsupported node type");
 	}
 
-	@safe unittest {
+	pure unittest {
 		assert(Node(42).toHash() != Node(41).toHash());
 		assert(Node(42).toHash() != Node("42").toHash());
 	}
@@ -669,7 +669,7 @@ struct Node {
 	}
 }
 
-@safe unittest {
+unittest {
 	import std.algorithm;
 	import std.exception;
 

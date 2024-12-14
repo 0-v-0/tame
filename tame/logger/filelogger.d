@@ -6,7 +6,7 @@ import tame.io.file;
 import tame.io.stdio;
 import tame.logger.core;
 
-auto fileLogger(File f, LogLevel levels = LogLevel.default_) {
+auto fileLogger(ref File f, LogLevel levels = LogLevel.default_) {
 	return Logger((in LogEntry entry) {
 		with (entry) {
 			toISOString(f, time);

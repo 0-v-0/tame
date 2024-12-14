@@ -443,7 +443,7 @@ public:
 		Returns: The number of bytes actually sent, or `Socket.ERROR` on
 		failure.
 	+/
-	ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) @trusted nothrow {
+	ptrdiff_t send(in void[] buf, SocketFlags flags) @trusted nothrow {
 		static if (is(typeof(MSG_NOSIGNAL))) {
 			flags = cast(SocketFlags)(flags | MSG_NOSIGNAL);
 		}
@@ -451,7 +451,7 @@ public:
 	}
 
 	/// ditto
-	ptrdiff_t send(scope const(void)[] buf) nothrow
+	ptrdiff_t send(in void[] buf) nothrow
 		=> send(buf, SocketFlags.none);
 
 	/++
@@ -461,7 +461,7 @@ public:
 		Returns: The number of bytes actually sent, or `Socket.ERROR` on
 		failure.
 	+/
-	ptrdiff_t sendTo(scope const(void)[] buf, SocketFlags flags, in Address to) @trusted {
+	ptrdiff_t sendTo(in void[] buf, SocketFlags flags, in Address to) @trusted {
 		static if (is(typeof(MSG_NOSIGNAL))) {
 			flags = cast(SocketFlags)(flags | MSG_NOSIGNAL);
 		}
@@ -469,12 +469,12 @@ public:
 	}
 
 	/// ditto
-	ptrdiff_t sendTo(scope const(void)[] buf, in Address to)
+	ptrdiff_t sendTo(in void[] buf, in Address to)
 		=> sendTo(buf, SocketFlags.none, to);
 
 	//assumes you connect()ed
 	/// ditto
-	ptrdiff_t sendTo(scope const(void)[] buf, SocketFlags flags = SocketFlags.none) @trusted {
+	ptrdiff_t sendTo(in void[] buf, SocketFlags flags = SocketFlags.none) @trusted {
 		static if (is(typeof(MSG_NOSIGNAL))) {
 			flags = cast(SocketFlags)(flags | MSG_NOSIGNAL);
 		}

@@ -7,13 +7,15 @@ import std.datetime;
 import tame.text.ascii;
 import tame.string;
 import std.ascii : isWhite;
-import std.string : replace, toStringz;
+import std.array : replace, replaceInto;
 
 enum indent = 2;
 
-Node loadyml(string str) @safe => loadyml(str, 0, 0);
+@safe:
 
-Node loadyml(ref string str, int n, uint ln) @safe {
+Node loadyml(string str) => loadyml(str, 0, 0);
+
+Node loadyml(ref string str, int n, uint ln) {
 	if (n > 63)
 		throw new NodeException("Nesting too deep.", Mark(ln, 0));
 	Node node;
@@ -113,7 +115,7 @@ Node loadyml(ref string str, int n, uint ln) @safe {
 	return node;
 }
 
-@safe unittest {
+unittest {
 	Node n = loadyml("foo: bar # comment");
 	assert(n["foo"].as!string == "bar");
 	n = loadyml("r: \ntest:\n  foo: a\n  bar: b\n  baz: c\nx:");
@@ -126,7 +128,7 @@ Node loadyml(ref string str, int n, uint ln) @safe {
 
 private:
 
-int getTabLevel(in char[] line, uint ln, ref uint p) @safe {
+int getTabLevel(in char[] line, uint ln, ref uint p) {
 	int i;
 	while (i < line.length && line[i] == ' ')
 		++i;
@@ -137,7 +139,7 @@ int getTabLevel(in char[] line, uint ln, ref uint p) @safe {
 	return level;
 }
 
-Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) @safe {
+Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) {
 	import std.array;
 
 	dchar state = '\0';
@@ -213,7 +215,7 @@ Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) @safe
 	return app[].length ? Node(app[]) : Node();
 }
 
-@safe unittest {
+unittest {
 	auto s = "|\n  x  \n  foo\n   bar";
 	uint ln, col;
 	Node n = parseValue(s, ln, col, 2);
@@ -247,16 +249,16 @@ auto peekLine(in char[] s) {
 	return i < 0 ? s : s[0 .. i + 1];
 }
 
-auto parseStr(ref string str, ref uint ln, ref uint col) {
+auto parseStr(ref string s, ref uint ln, ref uint col) {
 	import tame.data.yaml.util;
 	import std.array;
 	import tame.format;
 
 	bool inEscape, trim;
 	auto app = appender!string;
-	for (; str.length; col++) {
-		const c = str[0];
-		str = str[1 .. $];
+	for (; s.length; col++) {
+		const c = s[0];
+		s = s[1 .. $];
 		if (c == '\n') {
 			col = 0;
 			ln++;
@@ -294,14 +296,14 @@ auto parseStr(ref string str, ref uint ln, ref uint col) {
 
 		// Unicode char written in hexadecimal in an escape sequence
 		const hexLen = escapeHexLength(c);
-		auto hex = str[0 .. hexLen];
+		auto hex = s[0 .. hexLen];
 		foreach (hexDigit; hex) {
 			import std.ascii : isHexDigit;
 
 			if (!hexDigit.isHexDigit)
 				throw new NodeException(text("Invalid escape '", hex, "'"), Mark(ln, col));
 		}
-		str = str[hexLen .. $];
+		s = s[hexLen .. $];
 
 		size_t ate;
 		app ~= cast(dchar)convert(hex, 16, ate);
@@ -309,7 +311,7 @@ auto parseStr(ref string str, ref uint ln, ref uint col) {
 	return app[];
 }
 
-@safe unittest {
+unittest {
 	auto s = "a\\Lb";
 	uint ln, col;
 	assert(parseStr(s, ln, col) == "a\u2028b");
@@ -362,12 +364,12 @@ long convert(T)(const(T[]) digits, uint radix = 10, out size_t ate) {
 	return value;
 }
 
-auto tryParse(in char[] str, out bool result) {
-	if (str == "true") {
+auto tryParse(in char[] s, out bool result) {
+	if (s == "true") {
 		result = true;
 		return true;
 	}
-	return str == "false";
+	return s == "false";
 }
 
 auto tryParse(scope const(char)[] value, out long result) @trusted {
@@ -411,7 +413,7 @@ auto tryParse(scope const(char)[] value, out long result) @trusted {
 	return len == value.length;
 }
 
-@safe unittest {
+unittest {
 	test("685230", 685230L); // canonical
 	test("+685_230", 685230L); // decimal
 	test("02472256", 685230L); // octal
@@ -422,10 +424,13 @@ auto tryParse(scope const(char)[] value, out long result) @trusted {
 	test("-0b1", -1L);
 }
 
-auto tryParse(in char[] str, out double result) @trusted {
+auto tryParse(in char[] s, out double result) @trusted {
 	import core.stdc.stdio : sscanf;
+	import core.stdc.stdlib;
+	import tame.unsafe.string;
 
-	auto value = str.replace("_", "");
+	auto value = (cast(char*)alloca(s.length))[0 .. s.length];
+	replaceInto(value, s, "_", "");
 	if (value.length) {
 		const c = value[0];
 		result = c != '-' ? 1.0 : -1.0;
@@ -440,13 +445,15 @@ auto tryParse(in char[] str, out double result) @trusted {
 		else if (value.indexOf(':') >= 0) { //Sexagesimal
 			double val = 0.;
 			foreach (digit; value.splitter(':')) {
-				if (sscanf(digit.toStringz, "%lf", &n) != 1)
+				mixin TempCStr!digit;
+				if (sscanf(digitz, "%lf", &n) != 1)
 					goto err;
 				val = val * 60 + n;
 			}
 			result *= val;
 		} else { // Plain floating point
-			if (sscanf(value.toStringz, "%lf", &n) != 1)
+			mixin TempCStr!value;
+			if (sscanf(valuez, "%lf", &n) != 1)
 				goto err;
 			result *= n;
 		}
@@ -474,7 +481,7 @@ unittest {
 	assert(tryParse(".NaN", result) && result != result);
 }
 
-SysTime parseTimestamp(in char[] value)
+SysTime parseTimestamp(in char[] value) @trusted
 	=> value.length < 11 ? SysTime(Date.fromISOExtString(value), UTC())
 	: SysTime.fromISOExtString(
 		value.replace(' ', 'T'));

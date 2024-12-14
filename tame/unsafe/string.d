@@ -2,14 +2,14 @@ module tame.unsafe.string;
 
 nothrow @nogc:
 
-template TempDup(alias s, string name = s.stringof ~ "d") if (is(typeof(s) : T[], T)) {
+template TempDup(alias s, string name = s.stringof ~ "d", size_t reserve = 0) if (is(typeof(s) : T[], T)) {
 	import core.stdc.stdlib;
 	import core.stdc.string;
 	import std.traits : Unqual;
 
 	static if (is(typeof(s) : T[], T))
-		mixin("auto ", name, "= (cast(Unqual!T*)memcpy(",
-			"alloca(s.length * T.sizeof), s.ptr, s.length * T.sizeof))[0 .. s.length];");
+		mixin("auto ", name, "= (cast(Unqual!T*)memcpy(alloca(",
+			"(s.length + reserve) * T.sizeof), s.ptr, s.length * T.sizeof))[0 .. s.length + reserve];");
 }
 
 unittest {

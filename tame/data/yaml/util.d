@@ -1,5 +1,7 @@
 module tame.data.yaml.util;
 
+@safe nothrow pure:
+
 // Position in a YAML stream, used for error messages.
 struct Mark {
 	import std.algorithm;
@@ -47,7 +49,7 @@ package:
 
 package:
 
-@safe pure nothrow @nogc:
+@nogc:
 // dfmt off
 
 /// Convert a YAML escape to a dchar

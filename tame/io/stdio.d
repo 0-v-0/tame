@@ -22,6 +22,7 @@ tame.io.file;
 				break;
 			if (atomicOp!"+="(spinlock, 1) == 1) {
 				file.handle = fd;
+				file.refs = N;
 				atomicOp!"+="(spinlock, N);
 				break;
 			}

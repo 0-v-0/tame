@@ -29,7 +29,7 @@ unittest {
 	}
 }
 
-auto dirName(return scope const char[] path) {
+auto dirName(return in char[] path) {
 	if (path.length == 0)
 		return ".";
 
@@ -91,7 +91,7 @@ auto dirName(return scope const char[] path) {
 	}
 }
 
-auto baseName(return scope const char[] path) {
+auto baseName(return in char[] path) {
 	auto p1 = stripDrive(path);
 	if (p1.length == 0) {
 		version (Windows)
@@ -123,7 +123,7 @@ auto baseName(return scope const char[] path) {
 
 private:
 
-auto stripDrive(return scope const char[] path) {
+auto stripDrive(return in char[] path) {
 	version (Windows) {
 		if (hasDrive(path))
 			return path[2 .. path.length];

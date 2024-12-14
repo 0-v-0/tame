@@ -1,8 +1,9 @@
 module tame.io.file;
 
-import core.stdc.stdio;
-import core.stdc.stdlib;
-import tame.unsafe.string;
+import core.atomic,
+core.stdc.stdio,
+core.stdc.stdlib,
+tame.unsafe.string;
 
 version (Windows) {
 	// fopen expects file names to be
@@ -22,6 +23,7 @@ struct File {
 nothrow @nogc:
 	this(in char[] name, in char[] mode = "rb") {
 		handle = open(name, mode);
+		atomicStore(refs, isOpen);
 	}
 
 	this(int fd, in char[] mode = "rb") {
@@ -33,6 +35,7 @@ nothrow @nogc:
 		mixin TempCStr!mode;
 
 		handle = fdopen(fd, modez);
+		atomicStore(refs, isOpen);
 	}
 
 	version (Windows) {
@@ -62,6 +65,22 @@ nothrow @nogc:
 
 	void reopen(in char[] name, in char[] mode = "rb") {
 		handle = .reopen(name, mode, handle);
+	}
+
+	~this() {
+		detach();
+	}
+
+	this(this) @safe pure {
+		if (isOpen) {
+			assert(atomicLoad(refs));
+			atomicOp!"+="(refs, 1);
+		}
+	}
+
+	void detach() {
+		if (isOpen && atomicOp!"-="(refs, 1) == 0)
+			close();
 	}
 
 	void close() {
@@ -136,9 +155,8 @@ nothrow @nogc:
 		isOpen && .clearerr(handle);
 	}
 
-	auto byLine(char terminator = '\n', bool keepTerminator = false) {
-		return ByTerminator!1024(this, terminator, keepTerminator);
-	}
+	auto byLine(char terminator = '\n', bool keepTerminator = false)
+		=> ByTerminator!1024(this, terminator, keepTerminator);
 
 	@property @safe const {
 		bool isOpen() pure
@@ -165,7 +183,7 @@ nothrow @nogc:
 			return ftellF(cast(FILE*)handle);
 		}
 
-		int fileno() @trusted pure
+		int fileno() @trusted
 		in (isOpen, "file is not open") {
 			return .fileno(cast(FILE*)handle);
 		}
@@ -190,6 +208,7 @@ nothrow @nogc:
 
 package:
 	FILE* handle;
+	shared size_t refs;
 }
 
 /++
@@ -269,7 +288,7 @@ nothrow @nogc:
 	char terminator;
 	bool keepTerminator;
 
-	this(File file, char term, bool keepTerm = false) @safe {
+	this(ref File file, char term, bool keepTerm = false) @safe {
 		f = file;
 		terminator = term;
 		keepTerminator = keepTerm;
@@ -280,7 +299,7 @@ nothrow @nogc:
 	void read() @trusted {
 		import core.stdc.string : memchr;
 
-		if (!frontLen) {
+		if (!frontLen && file.isOpen) {
 			data = cast(char[])f.read(buf);
 			if (data.length) {
 				const p = memchr(data.ptr, terminator, data.length);

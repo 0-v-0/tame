@@ -38,7 +38,7 @@ public import tame.format.util;
 
 version (D_BetterC) {
 } else {
-	import std.utf;
+	import std.utf : byUTF;
 	import core.time : Duration;
 	import std.datetime.systime : SysTime;
 	import std.uuid : UUID;
@@ -119,7 +119,7 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 					else
 						advance(s.formatTo(v.get));
 				} else static if (f == FMT.STR) {
-					static if ((isArray!T && is(Unqual!(ForeachType!T) == char)))
+					static if (is(typeof(v[]) : const(char)[]))
 						put(v[]);
 					else static if (isInputRange!T && isSomeChar!(ElementEncodingType!T)) {
 						foreach (c; v.byUTF!char)
@@ -154,7 +154,7 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 					} else static if (is(T == char))
 						put(v);
 					else static if (isSomeChar!T) {
-						foreach (c; v.only.byUTF!char)
+						foreach (c; (()@trusted => (&v)[0 .. 1])().byUTF!char)
 							put(c);
 					} else static if (is(T : ulong))
 						advance(s.formatDecimal(v));
