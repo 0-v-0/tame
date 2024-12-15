@@ -569,21 +569,17 @@ public:
 	}
 
 	/// Set a socket option.
-	void setOption(SocketOptionLevel level, SocketOption option, scope void[] value) @trusted {
-		checkError(.setsockopt(sock, level, option, value.ptr, cast(uint)value.length),
+	void setOption(SocketOptionLevel level, SocketOption option, scope void[] value) @trusted
+		=> checkError(.setsockopt(sock, level, option, value.ptr, cast(uint)value.length),
 			"Unable to set socket option");
-	}
 
 	/// Common case for setting integer and boolean options.
-	void setOption(SocketOptionLevel level, SocketOption option, int value) @trusted {
-		setOption(level, option, (&value)[0 .. 1]);
-	}
+	void setOption(SocketOptionLevel level, SocketOption option, int value) @trusted
+		=> setOption(level, option, (&value)[0 .. 1]);
 
 	/// Set the linger option.
-	void setOption(SocketOptionLevel level, SocketOption option, Linger value) @trusted {
-		//setOption(cast(SocketOptionLevel) SocketOptionLevel.SOCKET, SocketOption.LINGER, (&value)[0 .. 1]);
-		setOption(level, option, (&value.clinger)[0 .. 1]);
-	}
+	void setOption(SocketOptionLevel level, SocketOption option, Linger value) @trusted
+		=> setOption(level, option, (&value)[0 .. 1]);
 
 	/++
 		Sets a timeout (duration) option, i.e. `SocketOption.sndtimeo` or
@@ -643,7 +639,8 @@ public:
 			setOption(level, option, ms);
 		} else version (Posix) {
 			timeval tv;
-			value.split!("seconds", "usecs")(tv.tv_sec, tv.tv_usec);
+			tv.tv_sec = cast(int)value.total!"seconds";
+			tv.tv_usec = cast(int)value.total!"usecs" % 1_000_000;
 			setOption(level, option, (&tv)[0 .. 1]);
 		} else
 			static assert(0);

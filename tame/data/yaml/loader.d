@@ -139,16 +139,16 @@ int getTabLevel(in char[] line, uint ln, ref uint p) {
 	return level;
 }
 
-Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) {
+Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 	import std.array;
 
 	dchar state = '\0';
 	uint lineBreaks, n;
 	auto app = appender!string;
-	for (; str.length; col++) {
-		const c = str.front;
+	for (; s.length; col++) {
+		const c = s.front;
 		if (state) {
-			str.popFront();
+			s.popFront();
 			if (c != '\n') {
 				if (state == '\'' && c == '\'')
 					break;
@@ -175,11 +175,11 @@ Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) {
 		switch (c) {
 		case '|':
 		case '>':
-			str.popFront();
+			s.popFront();
 			state = c;
 			n = level;
-			auto line = peekLine(str);
-			str = str[line.length .. $];
+			auto line = peekLine(s);
+			s = s[line.length .. $];
 			if (line == "\n") {
 				lineBreaks = 1;
 				break;
@@ -194,16 +194,16 @@ Node parseValue(ref string str, ref uint ln, ref uint col, uint level = 0) {
 			}
 			throw new NodeException("Expected line break", Mark(ln, col + 1));
 		case '\'':
-			str.popFront();
+			s.popFront();
 			state = c;
 			break;
 		case '"':
-			str.popFront();
-			app ~= parseStr(str, ln, col);
+			s.popFront();
+			app ~= parseStr(s, ln, col);
 			break;
 		default:
-			auto line = peekLine(str);
-			str = str[line.length .. $];
+			auto line = peekLine(s);
+			s = s[line.length .. $];
 			auto i = line.indexOf('#');
 			if (i >= 0)
 				line = line[0 .. i];

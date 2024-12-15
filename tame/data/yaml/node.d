@@ -39,23 +39,26 @@ struct Node {
 	import std.traits;
 	import tame.format;
 
-	package NodeType typ;
-	package Mark mark_;
+	package {
+		alias NT = NodeType;
+		NT typ;
+		Mark mark_;
+	}
 
 	@property pure @nogc nothrow const {
 
-		NodeType type() => typ;
+		NT type() => typ;
 
 		Mark mark() => mark_;
 
 		bool empty() @trusted {
 			switch (typ) {
-			case NodeType.nil,
-				NodeType.merge:
+			case NT.nil,
+				NT.merge:
 				return true;
-			case NodeType.sequence:
+			case NT.sequence:
 				return children.length == 0;
-			case NodeType.map:
+			case NT.map:
 				return map.length == 0;
 			default:
 			}
@@ -64,23 +67,23 @@ struct Node {
 	}
 
 	this(typeof(null)) pure {
-		typ = NodeType.nil;
+		typ = NT.nil;
 	}
 
 	this(T)(T value) @trusted pure if (isScalarType!T) {
 		static if (isFloatingPoint!T) {
-			typ = NodeType.decimal;
+			typ = NT.decimal;
 			alias T = double;
 		} else static if (isBoolean!T)
-			typ = NodeType.boolean;
+			typ = NT.boolean;
 		else
-			typ = NodeType.integer;
+			typ = NT.integer;
 
 		*cast(T*)&b = value;
 	}
 
 	this(T : const(char)[])(in T value) @trusted {
-		typ = NodeType.string;
+		typ = NT.string;
 		str = value;
 	}
 
@@ -90,7 +93,7 @@ struct Node {
 		auto String = Node("Hello world!");
 		auto Float = Node(5.0f);
 		auto Boolean = Node(true);
-		auto Time = Node(SysTime(DateTime(2005, 6, 15, 20, 0, 0), UTC()));
+		auto Time = Node(SysTime(DateTime(2005, 6, 15, 20, 0, 0)));
 	}
 
 	this(T)(T value) @trusted if (isArray!T && !is(T : const(char)[])) {
@@ -101,11 +104,11 @@ struct Node {
 			foreach (item; value)
 				children ~= Node(item);
 		}
-		typ = NodeType.sequence;
+		typ = NT.sequence;
 	}
 
 	this(SysTime value) @trusted pure {
-		typ = NodeType.timestamp;
+		typ = NT.timestamp;
 		time = value;
 	}
 
@@ -115,7 +118,7 @@ struct Node {
 		else
 			foreach (k, v; value)
 				map[k] = Node(v);
-		typ = NodeType.map;
+		typ = NT.map;
 	}
 
 	/// Construct a map node
@@ -161,7 +164,7 @@ struct Node {
 	in (keys.length == values.length, "Lengths of keys and values arrays mismatch") {
 		foreach (i, k; keys)
 			map[k] = Node(values[i]);
-		typ = NodeType.map;
+		typ = NT.map;
 	}
 
 	alias as = get;
@@ -169,7 +172,7 @@ struct Node {
 	T get(T)() const if (is(T == enum)) => cast(T)get!(OriginalType!T);
 
 	T get(T)() @trusted const if (isScalarType!T && !is(T == enum)) {
-		switch (typ) with (NodeType) {
+		switch (typ) with (NT) {
 		case boolean:
 			return cast(T)b;
 		case integer:
@@ -185,7 +188,7 @@ struct Node {
 	}
 
 	T get(T : const(char)[])() @trusted const if (!is(T == enum)) {
-		switch (typ) with (NodeType) {
+		switch (typ) with (NT) {
 		case nil:
 			return null;
 		case boolean:
@@ -222,23 +225,23 @@ struct Node {
 	}
 
 	T get(T : const SysTime)() const @trusted {
-		if (typ != NodeType.timestamp)
+		if (typ != NT.timestamp)
 			throw new NodeException(text("Cannot convert ", typ, " to timestamp"), mark_);
 		return time;
 	}
 
 	const(T) get(T : const(Node)[])() const @trusted if (!is(T == enum)) {
-		if (typ == NodeType.nil)
+		if (typ == NT.nil)
 			return null;
-		if (typ != NodeType.sequence)
+		if (typ != NT.sequence)
 			throw new NodeException(text("Cannot convert ", typ, " to array"), mark_);
 		return children;
 	}
 
 	const(T) get(T : const(Node[string]))() const @trusted if (!is(T == enum)) {
-		if (typ == NodeType.nil)
+		if (typ == NT.nil)
 			return null;
-		if (typ != NodeType.map)
+		if (typ != NT.map)
 			throw new NodeException(text("Cannot convert ", typ, " to map"), mark_);
 		return map;
 	}
@@ -264,9 +267,9 @@ struct Node {
 	 */
 	@property size_t length() const pure @trusted {
 		switch (typ) {
-		case NodeType.sequence:
+		case NT.sequence:
 			return children.length;
-		case NodeType.map:
+		case NT.map:
 			return map.length;
 		default:
 		}
@@ -284,12 +287,12 @@ struct Node {
 
 	auto ref opIndex(T)(T index) const @trusted {
 		switch (typ) {
-		case NodeType.sequence:
+		case NT.sequence:
 			static if (isIntegral!T)
 				return children[index];
 			else
 				throw new NodeException("Only integers may index sequence nodes", mark_);
-		case NodeType.map:
+		case NT.map:
 			static if (is(T : string))
 				return map[index];
 		default:
@@ -361,12 +364,12 @@ struct Node {
 	auto opIndexAssign(K, V)(V value, K key) @trusted {
 		if (empty) {
 			static if (isIntegral!K)
-				typ = NodeType.sequence;
+				typ = NT.sequence;
 			else
-				typ = NodeType.map;
+				typ = NT.map;
 		}
 		switch (typ) {
-		case NodeType.sequence:
+		case NT.sequence:
 			static if (isIntegral!K) {
 				static if (is(Unqual!V == Node))
 					return children[key] = value;
@@ -374,7 +377,7 @@ struct Node {
 					return children[key] = Node(value);
 			} else
 				assert(0, "Only integers may index sequence nodes");
-		case NodeType.map:
+		case NT.map:
 			static if (is(Unqual!V == Node))
 				return map[key] = value;
 			else
@@ -400,18 +403,18 @@ struct Node {
 	 */
 	void add(T)(T value) @trusted {
 		if (empty) {
-			typ = NodeType.sequence;
+			typ = NT.sequence;
 			children = null;
 		} else {
 			static if (is(Unqual!T == Node))
-				if (typ == NodeType.string) {
-					typ = NodeType.map;
+				if (typ == NT.string) {
+					typ = NT.map;
 					auto key = cast(string)str;
 					map = null;
 					map[key] = value;
 					return;
 				}
-			if (typ != NodeType.sequence)
+			if (typ != NT.sequence)
 				throw new NodeException(text("Trying to add an element to a ", typ,
 						" node"), mark_);
 		}
@@ -455,9 +458,9 @@ struct Node {
 	 */
 	void add(K : const(char)[], V)(K key, V value) @trusted {
 		if (empty) {
-			typ = NodeType.map;
+			typ = NT.map;
 			map = null;
-		} else if (typ != NodeType.map)
+		} else if (typ != NT.map)
 			throw new NodeException(text("Trying to add a key-value pair to a ", typ, " node"), mark_);
 
 		static if (is(Unqual!V == Node))
@@ -496,9 +499,9 @@ struct Node {
 	 *           pointer.
 	 */
 	inout(Node*) opBinaryRight(string op : "in", K)(K key) inout @trusted {
-		if (typ == NodeType.map)
+		if (typ == NT.map)
 			return key in map;
-		if (typ == NodeType.sequence)
+		if (typ == NT.sequence)
 			foreach (ref x; children)
 				if (x.get!K == key)
 					return &x;
@@ -562,18 +565,15 @@ struct Node {
 			// Equal lengths, compare items.
 			static if (is(T : Node[]))
 				foreach (i; 0 .. a.length) {
-					const itemCmp = a[i].opCmp(b[i]);
-					if (itemCmp)
+					if (const itemCmp = a[i].opCmp(b[i]))
 						return itemCmp;
 				}
 			else {
 				size_t i;
 				const keys = b.keys;
 				foreach (k, v; a) {
-					const keyCmp = scmp(k, keys[i]);
-					if (keyCmp) {
-						const valCmp = v.opCmp(b[keys[i]]);
-						if (valCmp)
+					if (const keyCmp = scmp(k, keys[i])) {
+						if (const valCmp = v.opCmp(b[keys[i]]))
 							return valCmp;
 					}
 				}
@@ -582,12 +582,12 @@ struct Node {
 		}
 
 		switch (typ) {
-		case NodeType.nil:
+		case NT.nil:
 			return 0;
-		case NodeType.boolean,
-			NodeType.integer:
+		case NT.boolean,
+			NT.integer:
 			return cmp(as!long, rhs.as!long);
-		case NodeType.decimal:
+		case NT.decimal:
 			const a = as!double;
 			const b = rhs.as!double;
 			if (isNaN(a))
@@ -601,13 +601,13 @@ struct Node {
 				return 0;
 
 			return cmp(a, b);
-		case NodeType.timestamp:
+		case NT.timestamp:
 			return cmp(time, rhs.as!(const SysTime));
-		case NodeType.string:
+		case NT.string:
 			return scmp(str, rhs.as!string);
-		case NodeType.sequence:
+		case NT.sequence:
 			return cmpCollection!(Node[]);
-		case NodeType.map:
+		case NT.map:
 			return cmpCollection!(Node[string]);
 		default:
 		}
@@ -624,9 +624,7 @@ struct Node {
 
 	// Compute hash of the node.
 	size_t toHash() const @trusted pure {
-		import tame.hash.xxh3;
-
-		switch (typ) with (NodeType) {
+		switch (typ) with (NT) {
 		case nil:
 			return 0;
 		case boolean,
@@ -636,7 +634,7 @@ struct Node {
 		case timestamp:
 			return time.toHash();
 		case string:
-			return xxh3_64Of(str);
+			return hashOf(str);
 		case sequence:
 			size_t hash;
 			foreach (node; children)
@@ -645,7 +643,7 @@ struct Node {
 		case map:
 			size_t hash;
 			foreach (key, value; this.map)
-				hash ^= (xxh3_64Of(key) << 5) + (value.toHash() ^ 0x38495ab5);
+				hash ^= (hashOf(key) << 5) + (value.toHash() ^ 0x38495ab5);
 			return hash;
 		default:
 		}
@@ -683,7 +681,6 @@ unittest {
 
 	assertThrown(aa.get!(Node[]));
 
-	auto r2 = n3.get!(Node[])
-		.map!(x => x.as!int * 10);
-	assert(r2.equal([10, 20, 30, 40]));
+	foreach (i, x; n3.get!(Node[]))
+		assert(x.get!int == i + 1);
 }
