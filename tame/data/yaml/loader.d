@@ -144,7 +144,7 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 
 	dchar state = '\0';
 	uint lineBreaks, n;
-	auto app = appender!string;
+	auto r = appender!string;
 	for (; s.length; col++) {
 		const c = s.front;
 		if (state) {
@@ -158,7 +158,7 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 					--n;
 				} else {
 					lineBreaks &= 3;
-					app ~= c;
+					r ~= c;
 				}
 				continue;
 			}
@@ -169,7 +169,7 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 			}
 			lineBreaks |= 4;
 			n = level;
-			app ~= state == '|' ? '\n' : ' ';
+			r ~= state == '|' ? '\n' : ' ';
 			continue;
 		}
 		switch (c) {
@@ -178,7 +178,7 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 			s.popFront();
 			state = c;
 			n = level;
-			auto line = peekLine(s);
+			const line = peekLine(s);
 			s = s[line.length .. $];
 			if (line == "\n") {
 				lineBreaks = 1;
@@ -199,7 +199,7 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 			break;
 		case '"':
 			s.popFront();
-			app ~= parseStr(s, ln, col);
+			r ~= parseStr(s, ln, col);
 			break;
 		default:
 			auto line = peekLine(s);
@@ -211,8 +211,8 @@ Node parseValue(ref string s, ref uint ln, ref uint col, uint level = 0) {
 		}
 	}
 	while (lineBreaks--)
-		app ~= '\n';
-	return app[].length ? Node(app[]) : Node();
+		r ~= '\n';
+	return r[].length ? Node(r[]) : Node();
 }
 
 unittest {
@@ -255,7 +255,7 @@ auto parseStr(ref string s, ref uint ln, ref uint col) {
 	import tame.format;
 
 	bool inEscape, trim;
-	auto app = appender!string;
+	auto r = appender!string;
 	for (; s.length; col++) {
 		const c = s[0];
 		s = s[1 .. $];
@@ -267,7 +267,7 @@ auto parseStr(ref string s, ref uint ln, ref uint col) {
 				continue;
 			}
 			trim = true;
-			app ~= ' ';
+			r ~= ' ';
 			continue;
 		}
 		if (!c.isWhite)
@@ -275,18 +275,18 @@ auto parseStr(ref string s, ref uint ln, ref uint col) {
 
 		if (!inEscape) {
 			if (c == '"')
-				return app[];
+				return r[];
 			// Escape sequence starts with a '\'
 			if (c == '\\')
 				inEscape = true;
 			else if (!trim || !c.isWhite)
-				app ~= c;
+				r ~= c;
 			continue;
 		}
 		// 'Normal' escape sequence
 		auto ch = fromEscape(c);
 		if (ch != '\uFFFF') {
-			app ~= ch;
+			r ~= ch;
 			inEscape = false;
 			continue;
 		}
@@ -306,9 +306,9 @@ auto parseStr(ref string s, ref uint ln, ref uint col) {
 		s = s[hexLen .. $];
 
 		size_t ate;
-		app ~= cast(dchar)convert(hex, 16, ate);
+		r ~= cast(dchar)convert(hex, 16, ate);
 	}
-	return app[];
+	return r[];
 }
 
 unittest {

@@ -469,9 +469,9 @@ struct Address {
 	string toString() const nothrow {
 		import std.array : appender;
 
-		auto app = appender!string;
-		toString(app);
-		return app[];
+		auto r = appender!string;
+		toString(r);
+		return r[];
 	}
 
 pure nothrow @nogc:
