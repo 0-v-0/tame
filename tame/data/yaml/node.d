@@ -46,7 +46,6 @@ struct Node {
 	}
 
 	@property pure @nogc nothrow const {
-
 		NT type() => typ;
 
 		Mark mark() => mark_;

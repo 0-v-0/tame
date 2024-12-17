@@ -104,11 +104,11 @@ void extractParams(S, M)(ref S url, ref M params) {
 	}
 }
 
-void putQueryParams(R, M)(R res, M params, char delimiter = '&') {
+void putQueryParams(R, M)(R r, M params, char delimiter = '&') {
 	foreach (key, val; params) {
-		res ~= key;
-		res ~= '=';
-		res ~= val;
-		res ~= delimiter;
+		r ~= key;
+		r ~= '=';
+		r ~= val;
+		r ~= delimiter;
 	}
 }
