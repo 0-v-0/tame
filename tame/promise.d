@@ -20,10 +20,14 @@ private template Arg(T) {
 		alias Arg = T;
 }
 
+/// A no-op function that does nothing.
 immutable noop = delegate() {};
+/// A no-op function that throws an exception.
 immutable thrower = delegate(Exception e) => throw e;
 
-struct Promise(T) if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K)) {
+/// A Promise is an object that represents the eventual completion (or failure) of an asynchronous operation and its resulting value.
+struct Promise(T)
+if (!is(Unqual!T : Exception) && !is(Unqual!T : Promise!K, K)) {
 	private {
 		ResolveFunc!void next;
 
@@ -176,7 +180,7 @@ static @safe @nogc pure nothrow:
 }
 
 unittest {
-	import std.stdio;
+	import tame.io.stdio;
 
 	writeln("start test");
 	Promise!int((resolve, reject) { resolve(10); }).then((int x) {
@@ -241,12 +245,12 @@ T await(T)(Promise!T promise) {
 unittest {
 	import core.thread,
 	core.time,
-	std.stdio;
+	tame.io.stdio;
 
 	auto func = () {
 		auto t = Promise!string((res) {
-			Thread.sleep(dur!"msecs"(50));
-			res("50 ms");
+			Thread.sleep(dur!"msecs"(10));
+			res("10 ms");
 		}).then((a) { a.writeln; });
 	};
 	new Thread(func).start();

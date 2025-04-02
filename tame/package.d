@@ -9,6 +9,6 @@ tame.fixed,
 tame.format,
 tame.meta,
 tame.parse,
-tame.unsafe,
 tame.string,
-tame.text;
+tame.text,
+tame.unsafe;

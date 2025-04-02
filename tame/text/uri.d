@@ -89,8 +89,7 @@ unittest {
 
 /// ditto
 void extractParams(S, M)(ref S url, ref M params) {
-	import std.algorithm;
-	import std.string;
+	import tame.string;
 
 	auto qmIndex = url.lastIndexOf('?');
 	if (qmIndex < 0)

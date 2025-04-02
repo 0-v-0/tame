@@ -4,6 +4,7 @@ version (LDC) {
 	pragma(LDC_no_moduleinfo);
 }
 
+/// The last valid Unicode $(CODEPOINT).
 enum lastDchar = 0x10FFFF;
 
 enum : dchar {
@@ -18,33 +19,29 @@ enum : dchar {
 // if need be they can be generated from unicode data as well
 
 /++
-	Returns whether `c` is a Unicode Private Use $(CODEPOINT)
+	Returns: whether `c` is a Unicode Private Use $(CODEPOINT)
 	(general Unicode category: Co).
 +/
-bool isPrivateUse(dchar c) {
-	return (0x00_E000 <= c && c <= 0x00_F8FF)
+bool isPrivateUse(dchar c)
+	=> (0x00_E000 <= c && c <= 0x00_F8FF)
 		|| (0x0F_0000 <= c && c <= 0x0F_FFFD)
 		|| (0x10_0000 <= c && c <= 0x10_FFFD);
-}
 
 /++
-	Returns whether `c` is a Unicode surrogate $(CODEPOINT)
+	Returns: whether `c` is a Unicode surrogate $(CODEPOINT)
 	(general Unicode category: Cs).
 +/
-bool isSurrogate(dchar c) {
-	return 0xD800 <= c && c <= 0xDFFF;
-}
+bool isSurrogate(dchar c)
+	=> 0xD800 <= c && c <= 0xDFFF;
 
 /++
-	Returns whether `c` is a Unicode high surrogate (lead surrogate).
+	Returns: whether `c` is a Unicode high surrogate (lead surrogate).
 +/
-bool isSurrogateHi(dchar c) {
-	return 0xD800 <= c && c <= 0xDBFF;
-}
+bool isSurrogateHi(dchar c)
+	=> 0xD800 <= c && c <= 0xDBFF;
 
 /++
-	Returns whether `c` is a Unicode low surrogate (trail surrogate).
+	Returns: whether `c` is a Unicode low surrogate (trail surrogate).
 +/
-bool isSurrogateLo(dchar c) {
-	return 0xDC00 <= c && c <= 0xDFFF;
-}
+bool isSurrogateLo(dchar c)
+	=> 0xDC00 <= c && c <= 0xDFFF;

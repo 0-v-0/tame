@@ -8,9 +8,8 @@ version (Windows) {
 
 	package alias errno = WSAGetLastError;
 } else version (Posix) {
-	import core.sys.posix.netdb;
-
 	package import core.stdc.errno : errno;
+	import core.sys.posix.netdb;
 }
 
 version (CRuntime_Glibc) version = GNU_STRERROR;
@@ -163,7 +162,7 @@ version (unittest) package {
 		debug (std_socket)
 			test();
 		else {
-			import std.stdio;
+			import tame.io.stdio;
 
 			try
 				test();

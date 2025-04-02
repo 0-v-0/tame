@@ -10,11 +10,10 @@ module tame.net.socket;
 import core.stdc.stdlib;
 import core.time;
 import tame.format : text;
-import tame.util;
-
 public import tame.net.addr;
 import tame.net.error;
 import tame.unsafe.ptrop;
+import tame.util;
 
 @safe:
 
@@ -44,6 +43,7 @@ version (Windows) {
 
 private:
 	enum SO_REUSEPORT = 0;
+	alias _close = .closesocket;
 
 	// Windows uses int instead of size_t for length arguments.
 	// Luckily, the send/recv functions make no guarantee that
@@ -74,6 +74,7 @@ private:
 	package enum SOCKET_ERROR = -1;
 
 private:
+	alias _close = .close;
 
 	enum : int {
 		SD_RECEIVE = SHUT_RD,
@@ -179,11 +180,6 @@ private:
 	socket_t sock;
 
 	enum BIOFlag = cast(AddrFamily)0x8000;
-	version (Windows) {
-		alias _close = .closesocket;
-	} else version (Posix) {
-		alias _close = .close;
-	}
 
 	// The WinSock timeouts seem to be effectively skewed by a constant
 	// offset of about half a second (value in milliseconds). This has
@@ -232,8 +228,9 @@ private:
 public:
 	/++
 		Returns: The local machine's host name
+		Throws: `SocketOSException` if the host name cannot be obtained.
 	+/
-	static @property string hostName() @trusted { // getter
+	static @property string hostName() @trusted {
 		char[256] result = void; // Host names are limited to 255 chars.
 		if (ERROR == gethostname(result.ptr, result.length))
 			throw new SocketOSException("Unable to obtain host name");
@@ -291,12 +288,12 @@ public:
 			=> cast(AddrFamily)(_family & ~BIOFlag);
 
 		/++
-	 		Get/set socket's blocking flag.
+			Get/set socket's blocking flag.
 
-	 		When a socket is blocking, calls to receive(), accept(), and send()
-	 		will block and wait for data/action.
-	 		A non-blocking socket will immediately return instead of blocking.
-	 	+/
+			When a socket is blocking, calls to receive(), accept(), and send()
+			will block and wait for data/action.
+			A non-blocking socket will immediately return instead of blocking.
+		+/
 		@property bool blocking() @trusted const {
 			version (Windows) {
 				return (_family & BIOFlag) == 0;
@@ -383,9 +380,9 @@ public:
 	}
 
 	/++
-		Listen for an incoming connection. `bind` must be called before you
-		can `listen`. The `backlog` is a request of how many pending
-		incoming connections are queued until `accept`ed.
+		Listen for an incoming connection. `bind` must be called before calling `listen`.
+		Params:
+			backlog = The maximum number of pending connections.
 	+/
 	void listen(int backlog = 128) @trusted
 		=> checkError(.listen(sock, backlog), "Unable to listen on socket");
@@ -565,7 +562,7 @@ public:
 			getOption(level, option, (&tv)[0 .. 1]);
 			result = tv.tv_sec.seconds + tv.tv_usec.usecs;
 		} else
-			static assert(0);
+			static assert(0, "No socket support for this platform yet.");
 	}
 
 	/// Set a socket option.
@@ -643,7 +640,7 @@ public:
 			tv.tv_usec = cast(int)value.total!"usecs" % 1_000_000;
 			setOption(level, option, (&tv)[0 .. 1]);
 		} else
-			static assert(0);
+			static assert(0, "No socket support for this platform yet.");
 	}
 
 	/++
@@ -651,9 +648,9 @@ public:
 		socket's error status.
 	+/
 	string getErrorText() @trusted {
-		int error = void;
-		getOption(SocketOptionLevel.SOCKET, SocketOption.error, error);
-		return formatSocketError(error);
+		int err = void;
+		getOption(SocketOptionLevel.SOCKET, SocketOption.error, err);
+		return formatSocketError(err);
 	}
 
 	/++

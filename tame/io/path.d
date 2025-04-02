@@ -29,6 +29,22 @@ unittest {
 	}
 }
 
+/** Returns the parent directory of `path`. On Windows, this
+	includes the drive letter if present. If `path` is a relative path and
+	the parent directory is the current working directory, returns `"."`.
+
+	Params:
+		path = A path name.
+
+	Returns:
+		A slice of `path` or `"."`.
+
+	Standards:
+	This function complies with
+	$(LINK2 http://pubs.opengroup.org/onlinepubs/9699919799/utilities/dirname.html,
+	the POSIX requirements for the 'dirname' shell utility)
+	(with suitable adaptations for Windows paths).
+*/
 auto dirName(return in char[] path) {
 	if (path.length == 0)
 		return ".";
@@ -91,6 +107,35 @@ auto dirName(return in char[] path) {
 	}
 }
 
+/**
+	Params:
+		path = A path name. It can be a string, or any random-access range of
+			characters.
+	Returns: The name of the file in the path name, without any leading
+		directory and with an optional suffix chopped off.
+
+	If `suffix` is specified, it will be compared to `path`
+	using `filenameCmp!cs`,
+	where `cs` is an optional template parameter determining whether
+	the comparison is case sensitive or not.  See the
+	$(LREF filenameCmp) documentation for details.
+
+	Note:
+	This function *only* strips away the specified suffix, which
+	doesn't necessarily have to represent an extension.
+	To remove the extension from a path, regardless of what the extension
+	is, use $(LREF stripExtension).
+	To obtain the filename without leading directories and without
+	an extension, combine the functions like this:
+	---
+	assert(baseName(stripExtension("dir/file.ext")) == "file");
+	---
+
+	Standards:
+	This function complies with
+	[the POSIX requirements for the 'basename' shell utility](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/basename.html)
+	(with suitable adaptations for Windows paths).
+*/
 auto baseName(return in char[] path) {
 	auto p1 = stripDrive(path);
 	if (p1.length == 0) {
@@ -127,7 +172,7 @@ auto stripDrive(return in char[] path) {
 	version (Windows) {
 		if (hasDrive(path))
 			return path[2 .. path.length];
-		else if (isUNC(path))
+		if (isUNC(path))
 			return path[uncRootLength(path) .. path.length];
 	}
 	return path;
