@@ -4,7 +4,7 @@ import std.traits;
 
 @safe pure nothrow:
 
-/** Determines whether the given character is a directory separator.
+/** Returns: whether the given character is a directory separator.
 
 	On Windows, this includes both $(D `\`) and $(D `/`).
 	On POSIX, it's just $(D `/`).

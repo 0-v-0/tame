@@ -1,9 +1,9 @@
 module tame.net.addr;
 
-import std.string : fromStringz;
 import core.stdc.string;
-import tame.net.error;
+import std.string : fromStringz;
 import tame.format : globalSink, text;
+import tame.net.error;
 import tame.string : indexOf;
 
 version (iOS)

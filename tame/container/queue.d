@@ -2,7 +2,7 @@ module tame.container.queue;
 
 import std.experimental.allocator : make;
 import std.experimental.allocator.mallocator : Mallocator;
-import std.traits : hasMember, hasIndirections;
+import std.traits : hasIndirections, hasMember;
 
 /++
 Simple queue implemented as a singly linked list with a tail pointer.
@@ -11,7 +11,8 @@ Allocations are non-GC and are damped by a free-list based on the nodes
 that are removed. Note that elements lifetime must be managed
 outside.
 +/
-struct Queue(T, alias Allocator = Mallocator.instance) if (!hasMember!(T, "__xdtor")) {
+struct Queue(T, alias Allocator = Mallocator.instance)
+if (!hasMember!(T, "__xdtor")) {
 private:
 
 	// Linked list node containing one element and pointer to the next node.
@@ -67,8 +68,6 @@ private:
 public:
 
 	@disable void opAssign(ref Queue);
-	@disable bool opEquals(ref Queue);
-	@disable int opCmp(ref Queue);
 
 @safe nothrow:
 	this(this) @nogc {
@@ -92,7 +91,7 @@ public:
 		freeStock();
 	}
 
-	/// Returns a forward range iterating over this queue.
+	/// Returns: a forward range iterating over this queue.
 	auto range() {
 		static struct Result {
 			private Node* cursor;
@@ -181,6 +180,7 @@ pure @nogc:
 	size_t length() const => len;
 }
 
+///
 @safe nothrow unittest {
 	auto queue = Queue!int();
 	assert(queue.empty);

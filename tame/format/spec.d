@@ -1,8 +1,7 @@
 module tame.format.spec;
 
 import std.algorithm : among;
-import std.meta,
-std.string : lastIndexOf;
+import std.meta;
 import tame.string : canFind, indexOf;
 
 package:
@@ -211,6 +210,8 @@ private long getNestedArrFmtLen(string fmt) {
 }
 
 private template getNestedArrayFmt(string fmt) {
+	import std.string : lastIndexOf;
+
 	// make sure we're searching in top level only
 	enum lastSubEnd = fmt.lastIndexOf("%)");
 	static if (lastSubEnd > 0) {

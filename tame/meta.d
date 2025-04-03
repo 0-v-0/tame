@@ -1,7 +1,7 @@
 module tame.meta;
 
-import std.traits;
 import std.meta : AliasSeq;
+import std.traits;
 
 struct Import(string Module) {
 	template opDispatch(string name) {
@@ -90,8 +90,8 @@ See_Also:
 $(LINK2 http://forum.dlang.org/thread/vqfvihyezbmwcjkmpzin@forum.dlang.org, A simple way to do compile time loop unrolling)
 */
 auto ctfeJoin(size_t length)(in string fmt, in string joiner = null) {
-	import std.range : iota;
 	import std.algorithm : map;
+	import std.range : iota;
 
 	// BUG: Cannot use, join(), as it "cannot access the nested function 'ctfeJoin'".
 	string result;

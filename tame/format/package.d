@@ -23,14 +23,14 @@ with `char` arguments can be used.
 +/
 module tame.format;
 
+import std.algorithm : max, min;
+import std.datetime.date : TimeOfDay;
 import std.meta,
 std.range,
 tame.buffer,
 tame.builtins,
 tame.format.spec,
 tame.util;
-import std.algorithm : max, min;
-import std.datetime.date : TimeOfDay;
 import std.string : fromStringz;
 import std.traits;
 import std.typecons : Flag, Tuple, isTuple;
@@ -38,9 +38,9 @@ public import tame.format.util;
 
 version (D_BetterC) {
 } else {
-	import std.utf : byUTF;
 	import core.time : Duration;
 	import std.datetime.systime : SysTime;
+	import std.utf : byUTF;
 	import std.uuid : UUID;
 }
 
@@ -132,13 +132,13 @@ uint formatTo(string fmt = "%s", S, A...)(ref scope S sink, auto ref scope A arg
 							advance(s.formatTo!(N ~ "(%d)")(v));
 						else
 							put(tmp);
-					} else static if (isTyp!(T, UUID))
+					} else static if (is(UUID) && is(T == UUID))
 						advance(s.formatValue(v));
-					else static if (isTyp!(T, SysTime))
+					else static if (is(SysTime) && is(T == SysTime))
 						advance(s.formatValue(v));
 					else static if (is(T == TimeOfDay))
 						advance(s.formatTo!"%02d:%02d:%02d"(v.hour, v.minute, v.second));
-					else static if (isTyp!(T, Duration))
+					else static if (is(Duration) && is(T == Duration))
 						advance(s.formatValue(v));
 					else static if (isArray!T || isInputRange!T) {
 						if (v.empty)
@@ -388,7 +388,8 @@ const(char)[] nFormat(string fmt = "%s", A...)(auto ref scope A args) @trusted {
 	assert(buf[0 .. l] == result);
 }
 
-string text(T...)(auto ref T args) @trusted if (T.length) {
+string text(T...)(auto ref T args) @trusted
+if (T.length) {
 	if (__ctfe) {
 		StringSink s;
 		foreach (ref arg; args)
@@ -628,7 +629,10 @@ uint formatValue(S)(ref scope S sink, double val) @trusted {
 	test(double.infinity, "inf");
 }
 
-uint formatValue(S)(ref scope S sink, UUID val) {
+version (D_BetterC) {
+} else:
+
+	uint formatValue(S)(ref scope S sink, UUID val) {
 	static if (!is(S == NullSink)) {
 		mixin SinkWriter!S;
 
@@ -650,15 +654,14 @@ uint formatValue(S)(ref scope S sink, UUID val) {
 	return 36;
 }
 
-static if (is(UUID))
-	@"UUID"unittest {
-		char[42] buf;
-		assert(buf.formatValue(UUID([
-			138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189, 251,
-			70
-		])) == 36);
-		assert(buf[0 .. 36] == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
-	}
+@"UUID"unittest {
+	char[42] buf;
+	assert(buf.formatValue(UUID([
+		138, 179, 6, 14, 44, 186, 79, 35, 183, 76, 181, 45, 179, 189, 251,
+		70
+	])) == 36);
+	assert(buf[0 .. 36] == "8ab3060e-2cba-4f23-b74c-b52db3bdfb46");
+}
 
 /++
 	Formats SysTime as ISO extended string.
@@ -766,44 +769,43 @@ uint formatValue(S)(ref scope S sink, SysTime val) @trusted {
 	}
 }
 
-static if (is(SysTime))
-	@"SysTime"unittest {
-		char[32] buf;
-		alias parse = SysTime.fromISOExtString;
+@"SysTime"unittest {
+	char[32] buf;
+	alias parse = SysTime.fromISOExtString;
 
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.1234567Z")) == 28);
-		assert(buf[0 .. 28] == "2020-06-08T14:25:30.1234567Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.123456Z")) == 27);
-		assert(buf[0 .. 27] == "2020-06-08T14:25:30.123456Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.12345Z")) == 26);
-		assert(buf[0 .. 26] == "2020-06-08T14:25:30.12345Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.1234Z")) == 25);
-		assert(buf[0 .. 25] == "2020-06-08T14:25:30.1234Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.123Z")) == 24);
-		assert(buf[0 .. 24] == "2020-06-08T14:25:30.123Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.12Z")) == 23);
-		assert(buf[0 .. 23] == "2020-06-08T14:25:30.12Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30.1Z")) == 22);
-		assert(buf[0 .. 22] == "2020-06-08T14:25:30.1Z");
-		assert(buf.formatValue(parse("2020-06-08T14:25:30Z")) == 20);
-		assert(buf[0 .. 20] == "2020-06-08T14:25:30Z");
-		version (Posix) {
-			assert(buf.formatValue(SysTime.init) == 20);
-			assert(buf[0 .. 20] == "0001-01-01T00:00:00Z");
-		} else version (Windows) {
-			assert(buf.formatValue(SysTime.init) == 7);
-			assert(buf[0 .. 7] == "invalid");
-		}
-
-		assert(getFormatSize(parse("2020-06-08T14:25:30.1234567Z")) == 28);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.123456Z")) == 27);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.12345Z")) == 26);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.1234Z")) == 25);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.123Z")) == 24);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.12Z")) == 23);
-		assert(getFormatSize(parse("2020-06-08T14:25:30.1Z")) == 22);
-		assert(getFormatSize(parse("2020-06-08T14:25:30Z")) == 20);
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.1234567Z")) == 28);
+	assert(buf[0 .. 28] == "2020-06-08T14:25:30.1234567Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.123456Z")) == 27);
+	assert(buf[0 .. 27] == "2020-06-08T14:25:30.123456Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.12345Z")) == 26);
+	assert(buf[0 .. 26] == "2020-06-08T14:25:30.12345Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.1234Z")) == 25);
+	assert(buf[0 .. 25] == "2020-06-08T14:25:30.1234Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.123Z")) == 24);
+	assert(buf[0 .. 24] == "2020-06-08T14:25:30.123Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.12Z")) == 23);
+	assert(buf[0 .. 23] == "2020-06-08T14:25:30.12Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30.1Z")) == 22);
+	assert(buf[0 .. 22] == "2020-06-08T14:25:30.1Z");
+	assert(buf.formatValue(parse("2020-06-08T14:25:30Z")) == 20);
+	assert(buf[0 .. 20] == "2020-06-08T14:25:30Z");
+	version (Posix) {
+		assert(buf.formatValue(SysTime.init) == 20);
+		assert(buf[0 .. 20] == "0001-01-01T00:00:00Z");
+	} else version (Windows) {
+		assert(buf.formatValue(SysTime.init) == 7);
+		assert(buf[0 .. 7] == "invalid");
 	}
+
+	assert(getFormatSize(parse("2020-06-08T14:25:30.1234567Z")) == 28);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.123456Z")) == 27);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.12345Z")) == 26);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.1234Z")) == 25);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.123Z")) == 24);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.12Z")) == 23);
+	assert(getFormatSize(parse("2020-06-08T14:25:30.1Z")) == 22);
+	assert(getFormatSize(parse("2020-06-08T14:25:30Z")) == 20);
+}
 
 /++
 	Formats duration.
@@ -882,49 +884,48 @@ uint formatValue(S)(ref scope S sink, Duration val) {
 	return totalLen;
 }
 
-static if (is(Duration))
-	@"duration"unittest {
-		import core.time;
+@"duration"unittest {
+	import core.time;
 
-		char[64] buf;
+	char[64] buf;
 
-		assert(buf.formatValue(1.seconds) == 6);
-		assert(buf[0 .. 6] == "1 secs");
+	assert(buf.formatValue(1.seconds) == 6);
+	assert(buf[0 .. 6] == "1 secs");
 
-		assert(buf.formatValue(1.seconds + 15.msecs + 5.hnsecs) == 18);
-		assert(buf[0 .. 18] == "1 secs, 15.0005 ms");
+	assert(buf.formatValue(1.seconds + 15.msecs + 5.hnsecs) == 18);
+	assert(buf[0 .. 18] == "1 secs, 15.0005 ms");
 
-		assert(buf.formatValue(1.seconds + 1215.msecs + 15.hnsecs) == 19);
-		assert(buf[0 .. 19] == "2 secs, 215.0015 ms");
+	assert(buf.formatValue(1.seconds + 1215.msecs + 15.hnsecs) == 19);
+	assert(buf[0 .. 19] == "2 secs, 215.0015 ms");
 
-		assert(buf.formatValue(5.days) == 6);
-		assert(buf[0 .. 6] == "5 days");
+	assert(buf.formatValue(5.days) == 6);
+	assert(buf[0 .. 6] == "5 days");
 
-		assert(buf.formatValue(5.days + 25.hours) == 13);
-		assert(buf[0 .. 13] == "6 days, 1 hrs");
+	assert(buf.formatValue(5.days + 25.hours) == 13);
+	assert(buf[0 .. 13] == "6 days, 1 hrs");
 
-		assert(buf.formatValue(5.days + 25.hours + 78.minutes) == 22);
-		assert(buf[0 .. 22] == "6 days, 2 hrs, 18 mins");
+	assert(buf.formatValue(5.days + 25.hours + 78.minutes) == 22);
+	assert(buf[0 .. 22] == "6 days, 2 hrs, 18 mins");
 
-		assert(buf.formatValue(5.days + 25.hours + 78.minutes + 102.seconds) == 31);
-		assert(buf[0 .. 31] == "6 days, 2 hrs, 19 mins, 42 secs");
+	assert(buf.formatValue(5.days + 25.hours + 78.minutes + 102.seconds) == 31);
+	assert(buf[0 .. 31] == "6 days, 2 hrs, 19 mins, 42 secs");
 
-		assert(buf.formatValue(5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs) == 39);
-		assert(buf[0 .. 39] == "6 days, 2 hrs, 19 mins, 44 secs, 321 ms");
+	assert(buf.formatValue(5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs) == 39);
+	assert(buf[0 .. 39] == "6 days, 2 hrs, 19 mins, 44 secs, 321 ms");
 
-		assert(buf.formatValue(
-				5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987
-				.usecs) == 43);
-		assert(buf[0 .. 43] == "6 days, 2 hrs, 19 mins, 44 secs, 322.987 ms");
+	assert(buf.formatValue(
+			5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987
+			.usecs) == 43);
+	assert(buf[0 .. 43] == "6 days, 2 hrs, 19 mins, 44 secs, 322.987 ms");
 
-		assert(buf.formatValue(
-				5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987.usecs + 15
-				.hnsecs) == 44);
-		assert(buf[0 .. 44] == "6 days, 2 hrs, 19 mins, 44 secs, 322.9885 ms");
+	assert(buf.formatValue(
+			5.days + 25.hours + 78.minutes + 102.seconds + 2321.msecs + 1987.usecs + 15
+			.hnsecs) == 44);
+	assert(buf[0 .. 44] == "6 days, 2 hrs, 19 mins, 44 secs, 322.9885 ms");
 
-		assert(buf.formatValue(-42.msecs) == 6);
-		assert(buf[0 .. 6] == "-42 ms");
+	assert(buf.formatValue(-42.msecs) == 6);
+	assert(buf[0 .. 6] == "-42 ms");
 
-		assert(buf.formatValue(Duration.zero) == 4);
-		assert(buf[0 .. 4] == "0 ms");
-	}
+	assert(buf.formatValue(Duration.zero) == 4);
+	assert(buf[0 .. 4] == "0 ms");
+}

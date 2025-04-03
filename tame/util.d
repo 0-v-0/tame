@@ -7,11 +7,11 @@ std.traits;
 package:
 
 T* alloc(T, bool init = true)() {
+	import core.exception : onOutOfMemoryError;
 	import core.stdc.stdlib;
 
 	if (T* p = cast(T*)(init ? calloc(1, T.sizeof) : malloc(T.sizeof)))
 		return p;
-	import core.exception : onOutOfMemoryError;
 
 	onOutOfMemoryError();
 }

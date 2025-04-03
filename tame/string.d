@@ -1,8 +1,8 @@
 module tame.string;
 
+import core.stdc.string : memchr;
 import tame.text.ascii,
 std.ascii : isWhite;
-import core.stdc.string : memchr;
 
 pure nothrow @nogc @safe:
 

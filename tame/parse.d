@@ -1,5 +1,61 @@
 module tame.parse;
 
+import std.traits;
+import tame.builtins;
+
+@nogc nothrow:
+
+/++
+Decodes a single hexadecimal character.
+
+Params:
+c = The hexadecimal digit.
+
+Returns: `c` converted to an integer.
++/
+
+uint hexDecode(char c) @safe pure => c + 9 * (c >> 6) & 15;
+
+uint hexDecode4(ref const(char)* hex) pure {
+	uint x = *cast(uint*)&hex;
+	hex += 4;
+	x = (x & 0x0F0F0F0F) + 9 * (x >> 6 & 0x01010101);
+	version (LittleEndian) {
+		return x >> 24 | x >> 12 & 0xF0 | x & 0xF00 | x << 12 & 0xF000;
+	} else {
+		x = (x | x >> 4) & 0x00FF00FF;
+		return (x | x >> 8) & 0x0000FFFF;
+	}
+}
+
+inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @trusted {
+	foreach (i; 0 .. 4) {
+		result *= 16;
+		int ch = hex[i] - '0';
+		if (ch <= 9) {
+			result += ch;
+		} else {
+			ch = (ch | 0x20) - 0x31;
+			if (ch > 5)
+				return hex + i;
+			result += ch + 10;
+		}
+	}
+	hex += 4;
+	return null;
+}
+
+nothrow unittest {
+	string x = "aF09";
+	const(char)* p = x.ptr;
+	uint result;
+	assert(!hexDecode4(p, result));
+	assert(result == 0xAF09);
+}
+
+version (D_BetterC) {
+} else:
+
 import std.conv : ConvException;
 import std.datetime;
 import std.format : formattedRead;
@@ -80,57 +136,4 @@ Date parseDate(S)(S input) {
 	int year, month, day;
 	input.formattedRead("%s-%s-%s", &year, &month, &day);
 	return Date(year, month, day);
-}
-
-import std.traits;
-import tame.builtins;
-
-@nogc nothrow:
-
-/++
-Decodes a single hexadecimal character.
-
-Params:
-c = The hexadecimal digit.
-
-Returns: `c` converted to an integer.
-+/
-
-uint hexDecode(char c) @safe pure => c + 9 * (c >> 6) & 15;
-
-uint hexDecode4(ref const(char)* hex) pure {
-	uint x = *cast(uint*)&hex;
-	hex += 4;
-	x = (x & 0x0F0F0F0F) + 9 * (x >> 6 & 0x01010101);
-	version (LittleEndian) {
-		return x >> 24 | x >> 12 & 0xF0 | x & 0xF00 | x << 12 & 0xF000;
-	} else {
-		x = (x | x >> 4) & 0x00FF00FF;
-		return (x | x >> 8) & 0x0000FFFF;
-	}
-}
-
-inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @trusted {
-	foreach (i; 0 .. 4) {
-		result *= 16;
-		int ch = hex[i] - '0';
-		if (ch <= 9) {
-			result += ch;
-		} else {
-			ch = (ch | 0x20) - 0x31;
-			if (ch > 5)
-				return hex + i;
-			result += ch + 10;
-		}
-	}
-	hex += 4;
-	return null;
-}
-
-nothrow unittest {
-	string x = "aF09";
-	const(char)* p = x.ptr;
-	uint result;
-	assert(!hexDecode4(p, result));
-	assert(result == 0xAF09);
 }

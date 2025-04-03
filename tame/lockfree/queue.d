@@ -97,8 +97,8 @@ private:
 
 unittest {
 	import core.thread;
-	import std.stdio;
 	import std.datetime.stopwatch;
+	import std.stdio;
 
 	enum amount = 500_000;
 
