@@ -1,6 +1,6 @@
 module tame.meta;
 
-import std.meta : AliasSeq;
+import std.meta : Seq = AliasSeq;
 import std.traits;
 
 struct Import(string Module) {
@@ -20,16 +20,16 @@ template Forward(string member) {
 	}
 }
 
-template staticIota(int begin, int end) {
-	alias staticIota = AliasSeq!();
+template Iota(int begin, int end) {
+	alias Iota = Seq!();
 	static foreach (i; begin .. end)
-		staticIota = AliasSeq!(staticIota, i);
+		Iota = Seq!(Iota, i);
 }
 
 ///
 unittest {
-	static assert(staticIota!(0, 0) == AliasSeq!());
-	static assert(staticIota!(0, 5) == AliasSeq!(0, 1, 2, 3, 4));
+	static assert(Iota!(0, 0) == Seq!());
+	static assert(Iota!(0, 5) == Seq!(0, 1, 2, 3, 4));
 }
 
 template getUDA(alias sym, T) {
@@ -63,15 +63,15 @@ template getSymbolsWith(alias attr, symbols...) {
 			enum hasAttr = false;
 	}
 
-	alias getSymbolsWith = AliasSeq!();
+	alias getSymbolsWith = Seq!();
 	static foreach (symbol; symbols) {
 		static foreach (name; __traits(derivedMembers, symbol))
 			static if (hasAttr!(symbol, name))
-				getSymbolsWith = AliasSeq!(getSymbolsWith, __traits(getMember, symbol, name));
+				getSymbolsWith = Seq!(getSymbolsWith, __traits(getMember, symbol, name));
 	}
 }
 
-alias Omit(size_t I, T...) = AliasSeq!(T[0 .. I], T[I + 1 .. $]);
+alias Omit(size_t I, T...) = Seq!(T[0 .. I], T[I + 1 .. $]);
 
 /**
 Generates a mixin string for repeating code. It can be used to unroll variadic arguments.

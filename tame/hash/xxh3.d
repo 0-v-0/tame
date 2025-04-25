@@ -314,23 +314,8 @@ in (9 <= len && len <= 16, "len out of range") {
 	}
 }
 
-bool xxh_likely(bool exp) {
-	version (LDC) {
-		import ldc.intrinsics;
-
-		return llvm_expect(exp, true);
-	} else
-		return exp;
-}
-
-bool xxh_unlikely(bool exp) {
-	version (LDC) {
-		import ldc.intrinsics;
-
-		return llvm_expect(exp, false);
-	} else
-		return exp;
-}
+import core.builtins : xxh_likely = likely,
+	xxh_unlikely = unlikely;
 
 XXH64_hash_t xxh3_len_0to16_64b(
 	const ubyte* input, size_t len, const ubyte* secret, XXH64_hash_t seed)
