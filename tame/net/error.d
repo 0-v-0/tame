@@ -71,7 +71,7 @@ string getGaiError(int err) @trusted nothrow {
 		return cast(string)fromStringz(gai_strerror(err));
 }
 
-/// Returns the error message of the most recently encountered network error.
+/// Returns: the error message of the most recently encountered network error.
 @property string lastSocketError() nothrow
 	=> formatSocketError(errno());
 

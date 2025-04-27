@@ -2,7 +2,7 @@ module tame.hash.xxh3;
 
 version (Have128BitInteger) import core.int128;
 
-import core.bitop : rol, bswap;
+import core.bitop : bswap, rol;
 
 version (X86)
 	version = HaveUnalignedLoads;
@@ -30,7 +30,7 @@ ulong xxh_read64(const void* ptr)
 @trusted {
 	ulong val;
 	version (HaveUnalignedLoads)
-		val = *(cast(ulong*)ptr);
+		val = *cast(ulong*)ptr;
 	else
 		(cast(ubyte*)&val)[0 .. ulong.sizeof] = (cast(ubyte*)ptr)[0 .. ulong.sizeof];
 	return val;
@@ -132,7 +132,7 @@ align(64) immutable ubyte[XXH3_SECRET_DEFAULT_SIZE] xxh3_kSecret = [
 uint xxh_read32(const void* ptr) @trusted {
 	uint val;
 	version (HaveUnalignedLoads)
-		val = *(cast(uint*)ptr);
+		val = *cast(uint*)ptr;
 	else
 		(cast(ubyte*)&val)[0 .. uint.sizeof] = (cast(ubyte*)ptr)[0 .. uint.sizeof];
 	return val;

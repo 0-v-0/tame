@@ -90,7 +90,7 @@ version (unittest) {
 }
 
 unittest {
-	import std.stdio, std.datetime.stopwatch;
+	import std.datetime.stopwatch, std.stdio;
 
 	StopWatch sw;
 	sw.start;
