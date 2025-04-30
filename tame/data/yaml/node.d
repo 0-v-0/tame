@@ -2,6 +2,7 @@ module tame.data.yaml.node;
 
 import tame.data.yaml.util;
 
+/// Node type.
 enum NodeType {
 	nil,
 	merge,
@@ -18,15 +19,12 @@ enum NodeType {
 @safe:
 
 /// Exception thrown at node related errors.
-// Construct a NodeException.
-//
-// Params:  msg   = Error message.
-//          start = Start position of the node.
 class NodeException : Exception {
-	// Construct a NodeException.
-	//
-	// Params:  msg   = Error message.
-	//          start = Start position of the node.
+	/++ Construct a NodeException.
+
+		Params:	msg   = Error message.
+				start = Start position of the node.
+	+/
 	package this(string msg, Mark start, string file = __FILE__, size_t line = __LINE__)
 	@safe pure nothrow {
 		super(msg ~ "\nNode at: " ~ start.toString(), file, line);

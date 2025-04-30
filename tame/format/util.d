@@ -3,6 +3,14 @@ module tame.format.util;
 import std.meta,
 std.traits;
 
+version (D_BetterC) {
+	/// pseudosink used just for calculation of resulting string length
+	struct NullSink {
+	}
+} else {
+	public import std.range : NullSink;
+}
+
 @safe:
 
 /// Returns string of enum member value

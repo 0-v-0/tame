@@ -166,12 +166,12 @@ auto getAddrInfo(A...)(in char[] node, scope A options) {
 
 @system unittest {
 	struct Oops {
-		const(char[]) breakSafety() {
+		const(char[]) unsafeOp() {
 			*cast(int*)0xcafebabe = 0xdeadbeef;
 			return null;
 		}
 
-		alias breakSafety this;
+		alias unsafeOp this;
 	}
 
 	assert(!__traits(compiles, () { getAddrInfo("", Oops.init); }), "getAddrInfo breaks @safe");

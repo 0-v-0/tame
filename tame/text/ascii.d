@@ -3,7 +3,6 @@ module tame.text.ascii;
 version (Windows)
 	import core.stdc.string : memicmp;
 else version (Posix) {
-package:
 	import core.sys.posix.strings : memicmp = strncasecmp;
 } else
 	static assert(0, "Unsupported platform");

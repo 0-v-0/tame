@@ -3,8 +3,6 @@ module tame.parse;
 import std.traits;
 import tame.builtins;
 
-@nogc nothrow:
-
 /++
 Decodes a single hexadecimal character.
 
@@ -14,9 +12,9 @@ c = The hexadecimal digit.
 Returns: `c` converted to an integer.
 +/
 
-uint hexDecode(char c) @safe pure => c + 9 * (c >> 6) & 15;
+uint hexDecode(char c) @safe @nogc pure nothrow => c + 9 * (c >> 6) & 15;
 
-uint hexDecode4(ref const(char)* hex) pure {
+uint hexDecode4(ref const(char)* hex) pure nothrow {
 	uint x = *cast(uint*)&hex;
 	hex += 4;
 	x = (x & 0x0F0F0F0F) + 9 * (x >> 6 & 0x01010101);
@@ -45,7 +43,7 @@ inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @tru
 	return null;
 }
 
-nothrow unittest {
+unittest {
 	string x = "aF09";
 	const(char)* p = x.ptr;
 	uint result;

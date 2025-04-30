@@ -35,7 +35,7 @@ size_t encodedSize(size_t length)
 	=> (length + 2) / 3 * 4; // for every 3 bytes we need 4 bytes to encode, with any fraction needing an additional 4 bytes with padding
 
 /++
-	encodes data into buff and returns the number of bytes encoded.
+	encodes data into buf and returns the number of bytes encoded.
 	this will not terminate and pad any "leftover" bytes, and will instead
 	only encode up to the highest number of bytes divisible by three.
 
@@ -43,13 +43,13 @@ size_t encodedSize(size_t length)
 
 	Params:
 	data = what is to be encoded
-	buff = buffer large enough to hold encoded data
+	buf = buffer large enough to hold encoded data
 	bytesEncoded = ref that returns how much of the buffer was filled
 +/
-size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) @trusted {
+size_t encodeChunk(const ubyte[] data, char[] buf, ref size_t bytesEncoded) @trusted {
 	size_t tripletCount = data.length / 3;
 	size_t rtn;
-	char* rtnPtr = buff.ptr;
+	char* rtnPtr = buf.ptr;
 	const(ubyte)* dataPtr = data.ptr;
 
 	if (data.length) {
@@ -71,7 +71,7 @@ size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) @tr
 	encodes data and returns as an ASCII base64 string.
 
 	Params:data = what is to be encoded
-	buff = buffer large enough to hold encoded data
+	buf = buffer large enough to hold encoded data
 
 	Example:
 	---
@@ -80,11 +80,11 @@ size_t encodeChunk(const ubyte[] data, char[] buff, ref size_t bytesEncoded) @tr
 	assert(encodedString == "SGVsbG8sIGhvdyBhcmUgeW91IHRvZGF5Pw==")
 	---
 +/
-char[] encode(const ubyte[] data, char[] buff) @trusted
-in (buff.length >= encodedSize(data)) {
+char[] encode(const ubyte[] data, char[] buf) @trusted
+in (buf.length >= encodedSize(data)) {
 	size_t bytesEncoded;
-	size_t numBytes = encodeChunk(data, buff, bytesEncoded);
-	char* rtnPtr = buff.ptr + bytesEncoded;
+	size_t numBytes = encodeChunk(data, buf, bytesEncoded);
+	char* rtnPtr = buf.ptr + bytesEncoded;
 	const(ubyte)* dataPtr = data.ptr + numBytes;
 	size_t tripletFraction = data.length - numBytes;
 
@@ -103,7 +103,7 @@ in (buff.length >= encodedSize(data)) {
 		break;
 	default:
 	}
-	return buff[0 .. (rtnPtr - buff.ptr)];
+	return buf[0 .. (rtnPtr - buf.ptr)];
 }
 
 /++
@@ -118,7 +118,7 @@ in (buff.length >= encodedSize(data)) {
 
 	Params:
 	data = what is to be decoded
-	buff = a big enough array to hold the decoded data
+	buf = a big enough array to hold the decoded data
 
 	Example:
 	---
@@ -127,12 +127,12 @@ in (buff.length >= encodedSize(data)) {
 	Stdout(decodedString).newline; // Hello, how are you today?
 	---
 +/
-ubyte[] decode(const char[] data, ubyte[] buff) @trusted {
+ubyte[] decode(const char[] data, ubyte[] buf) @trusted {
 	if (data.length) {
 		ubyte[4] base64Quad;
 		ubyte* quadPtr = base64Quad.ptr;
 		ubyte* endPtr = base64Quad.ptr + 4;
-		ubyte* rtnPt = buff.ptr;
+		ubyte* rtnPt = buf.ptr;
 		size_t encodedLength;
 
 		ubyte padCount;
@@ -191,7 +191,7 @@ ubyte[] decode(const char[] data, ubyte[] buff) @trusted {
 			}
 		}
 
-		return buff[0 .. encodedLength];
+		return buf[0 .. encodedLength];
 	}
 
 	return [];

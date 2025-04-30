@@ -284,7 +284,7 @@ public:
 		}
 
 		/// Get the socket's address family.
-		@property AddrFamily addressFamily() const @trusted pure
+		@property AddrFamily family() const @trusted pure
 			=> cast(AddrFamily)(_family & ~BIOFlag);
 
 		/++
@@ -407,7 +407,7 @@ public:
 
 	/// Remote endpoint `Address`.
 	@property Address remoteAddr() @trusted
-	out (addr; addr.addressFamily == addressFamily) {
+	out (addr; addr.family == family) {
 		Address addr = createAddr();
 		socklen_t nameLen = addr.nameLen;
 		checkError(.getpeername(sock, addr.name, &nameLen),
@@ -418,7 +418,7 @@ public:
 
 	/// Local endpoint `Address`.
 	@property Address localAddr() @trusted
-	out (addr; addr.addressFamily == addressFamily) {
+	out (addr; addr.family == family) {
 		Address addr = createAddr();
 		socklen_t nameLen = addr.nameLen;
 		checkError(.getsockname(sock, addr.name, &nameLen),
@@ -498,14 +498,14 @@ public:
 	ptrdiff_t receiveFrom(scope void[] buf, SocketFlags flags, ref Address from) @trusted {
 		if (!buf.length) //return 0 and don't think the connection closed
 			return 0;
-		if (from.addressFamily != addressFamily)
+		if (from.family != family)
 			from = createAddr();
 		socklen_t nameLen = from.nameLen;
 		const read = .recvfrom(sock, buf.ptr, capToInt(buf.length), flags, from.name, &nameLen);
 
 		if (read >= 0) {
 			from.nameLen = nameLen;
-			assert(from.addressFamily == addressFamily);
+			assert(from.family == family, "Address family mismatch");
 		}
 		return read;
 	}
@@ -690,7 +690,7 @@ public:
 	+/
 	private Address createAddr() nothrow @nogc @trusted {
 		free(ptr);
-		switch (addressFamily) {
+		switch (family) {
 			static if (is(UnixAddr)) {
 		case AddrFamily.UNIX:
 				ptr = alloc!(UnixAddr, false);
@@ -715,7 +715,7 @@ auto tcpSocket(AddrFamily af = AddrFamily.IPv4)
 
 /// Constructs a blocking TCP Socket and connects to the given `Address`.
 auto tcpSocket(in Address connectTo) {
-	auto s = tcpSocket(connectTo.addressFamily);
+	auto s = tcpSocket(connectTo.family);
 	s.connect(connectTo);
 	return s;
 }
@@ -736,7 +736,7 @@ auto udpSocket(AddrFamily af = AddrFamily.IPv4)
 }
 
 /++
-Creates a pair of connected sockets.
+Returns: a pair of connected sockets.
 
 The two sockets are indistinguishable.
 
@@ -769,8 +769,7 @@ Socket[2] socketPair() {
 
 		listener.close();
 		return result;
-	} else
-		static assert(0);
+	}
 }
 
 ///
