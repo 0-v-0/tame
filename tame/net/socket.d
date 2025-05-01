@@ -287,6 +287,8 @@ public:
 		@property AddrFamily family() const @trusted pure
 			=> cast(AddrFamily)(_family & ~BIOFlag);
 
+		alias addressFamily = family;
+
 		/++
 			Get/set socket's blocking flag.
 

@@ -43,6 +43,7 @@ inout(char)* hexDecode4(ref inout(char)* hex, out uint result) pure nothrow @tru
 	return null;
 }
 
+///
 unittest {
 	string x = "aF09";
 	const(char)* p = x.ptr;
@@ -76,6 +77,7 @@ SysTime parseSysTime(S)(in S input) @trusted {
 		throw new DateTimeException("Can not convert '" ~ input ~ "' to SysTime");
 }
 
+///
 @safe unittest {
 	// Accept valid (as per D language) systime formats
 	parseSysTime("2019-May-04 13:34:10.500Z");
@@ -113,6 +115,7 @@ DateTime parseDateTime(S)(in S input) @trusted {
 		throw new DateTimeException("Can not convert '" ~ input ~ "' to DateTime");
 }
 
+///
 @safe unittest {
 	// Accept valid (as per D language) datetime formats
 	parseDateTime("20101230T000000");

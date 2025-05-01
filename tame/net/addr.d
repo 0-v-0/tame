@@ -482,8 +482,10 @@ pure nothrow @nogc:
 	}
 
 	/// Family of this address.
-	@property auto addressFamily() const
+	@property auto family() const
 		=> name ? cast(AddrFamily)name.sa_family : AddrFamily.unspecified;
+
+	alias addressFamily = family;
 }
 
 struct IPv4Addr {
@@ -765,9 +767,9 @@ static if (is(sockaddr_un)) {
 			// length on iOS derived platforms. Due to the sandbox, the length
 			// of paths can quickly become too long.
 			static string deleteme() {
-				import tame.format : text;
-				import std.process : thisProcessID;
 				import std.file : tempDir;
+				import std.process : thisProcessID;
+				import tame.format : text;
 
 				return text(tempDir, thisProcessID);
 			}

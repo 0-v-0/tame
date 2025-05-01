@@ -177,7 +177,7 @@ unittest {
 	static assert(lastIndexOf("hello", 'o', 2) == -1);
 }
 
-S stripLeft(S)(S input) {
+auto stripLeft(S)(S input) {
 	size_t i;
 	for (; i < input.length; ++i) {
 		if (!isWhite(input[i]))
@@ -191,7 +191,7 @@ unittest {
 	static assert(stripLeft(" foo") == "foo");
 }
 
-S stripLeft(S)(S input, char c) {
+auto stripLeft(S)(S input, char c) {
 	size_t i;
 	for (; i < input.length; ++i) {
 		if (input[i] != c)
@@ -207,7 +207,7 @@ unittest {
 	static assert(stripLeft(" foo") == "foo");
 }
 
-S stripRight(S)(S input) {
+auto stripRight(S)(S input) {
 	size_t i = input.length;
 	for (; i; --i) {
 		if (!isWhite(input[i - 1]))
@@ -221,7 +221,7 @@ unittest {
 	assert(stripRight("foo ") == "foo");
 }
 
-S stripRight(S)(S input, char c) {
+auto stripRight(S)(S input, char c) {
 	size_t i = input.length;
 	for (; i; --i) {
 		if (input[i - 1] != c)
@@ -237,7 +237,7 @@ unittest {
 	assert(stripRight("foo ", 'o') == "foo ");
 }
 
-S strip(S)(S input) {
+auto strip(S)(S input) {
 	size_t i = input.length;
 	for (; i; --i) {
 		if (!isWhite(input[i - 1]))
@@ -251,7 +251,7 @@ S strip(S)(S input) {
 	return input[j .. i];
 }
 
-S strip(S)(S input, char c) {
+auto strip(S)(S input, char c) {
 	size_t i = input.length;
 	for (; i; --i) {
 		if (input[i - 1] != c)

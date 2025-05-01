@@ -103,7 +103,7 @@ in (buf.length >= encodedSize(data)) {
 		break;
 	default:
 	}
-	return buf[0 .. (rtnPtr - buf.ptr)];
+	return buf[0 .. rtnPtr - buf.ptr];
 }
 
 /++
