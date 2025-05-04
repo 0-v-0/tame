@@ -1,8 +1,8 @@
 module tame.util;
 
 import std.ascii,
-std.meta,
-std.traits;
+std.traits,
+tame.meta;
 
 package:
 
@@ -17,7 +17,7 @@ T* alloc(T, bool init = true)() {
 }
 
 int numDigits(T : ulong)(T num, uint radix = 10) @trusted {
-	alias U = AliasSeq!(uint, ulong)[T.sizeof / 8];
+	alias U = Seq!(uint, ulong)[T.sizeof / 8];
 	static if (isSigned!T) {
 		int digits = void;
 		U n = void;

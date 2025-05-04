@@ -1,6 +1,6 @@
 module tame.meta;
 
-import std.meta : Seq = AliasSeq;
+public import std.meta : Seq = AliasSeq;
 import std.traits;
 
 struct Import(string Module) {

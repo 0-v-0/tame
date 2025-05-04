@@ -14,7 +14,8 @@ version (D_BetterC) {
 @safe:
 
 /// Returns string of enum member value
-string enumToStr(E)(E value) if (is(E == enum)) {
+string enumToStr(E)(E value)
+if (is(E == enum)) {
 	switch (value) {
 		static foreach (i, e; NoDuplicates!(EnumMembers!E)) {
 	case e:

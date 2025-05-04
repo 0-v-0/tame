@@ -1,7 +1,7 @@
 module tame.format.spec;
 
 import std.algorithm : among;
-import std.meta;
+import std.meta : Seq = AliasSeq;
 import tame.string : canFind, indexOf;
 
 package:
@@ -217,13 +217,13 @@ private template getNestedArrayFmt(string fmt) {
 	static if (lastSubEnd > 0) {
 		enum i = fmt[lastSubEnd + 2 .. $].lastIndexOf("%|"); // delimiter separator used
 		static if (i >= 0)
-			alias getNestedArrayFmt = AliasSeq!(fmt[0 .. lastSubEnd + 2 + i], fmt[lastSubEnd + i + 4 .. $]);
+			alias getNestedArrayFmt = Seq!(fmt[0 .. lastSubEnd + 2 + i], fmt[lastSubEnd + i + 4 .. $]);
 		else
-			alias getNestedArrayFmt = AliasSeq!(fmt[0 .. lastSubEnd + 2], fmt[lastSubEnd + 2 .. $]);
+			alias getNestedArrayFmt = Seq!(fmt[0 .. lastSubEnd + 2], fmt[lastSubEnd + 2 .. $]);
 	} else {
 		enum i = fmt.lastIndexOf("%|"); // delimiter separator used
 		static if (i >= 0)
-			alias getNestedArrayFmt = AliasSeq!(fmt[0 .. i], fmt[i + 2 .. $]); // we can return delimiter directly
+			alias getNestedArrayFmt = Seq!(fmt[0 .. i], fmt[i + 2 .. $]); // we can return delimiter directly
 		else {
 			// we need to find end of inner fmt spec first
 			static assert(fmt.length >= 2, "Invalid nested array element format specifier: " ~ fmt);
@@ -237,19 +237,19 @@ private template getNestedArrayFmt(string fmt) {
 				enum nlen = fmt[1] == '(' ? (2 + getNestedArrFmtLen(fmt[2 .. $])) : (
 						3 + getNestedArrFmtLen(fmt[3 .. $]));
 				static assert(nlen > 0, "Invalid nested array format specifier: " ~ fmt);
-				alias getNestedArrayFmt = AliasSeq!(fmt[0 .. nlen], fmt[nlen .. $]);
+				alias getNestedArrayFmt = Seq!(fmt[0 .. nlen], fmt[nlen .. $]);
 			} else // split at the end of element fmt spec
-				alias getNestedArrayFmt = AliasSeq!(fmt[0 .. endIdx + 1], fmt[endIdx + 1 .. $]);
+				alias getNestedArrayFmt = Seq!(fmt[0 .. endIdx + 1], fmt[endIdx + 1 .. $]);
 		}
 	}
 }
 
 @"getNestedArrayFmt"unittest {
-	static assert(getNestedArrayFmt!"%d " == AliasSeq!("%d", " "));
-	static assert(getNestedArrayFmt!"%d %|, " == AliasSeq!("%d ", ", "));
-	static assert(getNestedArrayFmt!"%(%d %|, %)" == AliasSeq!("%(%d %|, %)", ""));
-	static assert(getNestedArrayFmt!"%(%d %|, %),-" == AliasSeq!("%(%d %|, %)", ",-"));
-	static assert(getNestedArrayFmt!"foo%(%d %|, %)-%|;" == AliasSeq!("foo%(%d %|, %)-", ";"));
+	static assert(getNestedArrayFmt!"%d " == Seq!("%d", " "));
+	static assert(getNestedArrayFmt!"%d %|, " == Seq!("%d ", ", "));
+	static assert(getNestedArrayFmt!"%(%d %|, %)" == Seq!("%(%d %|, %)", ""));
+	static assert(getNestedArrayFmt!"%(%d %|, %),-" == Seq!("%(%d %|, %)", ",-"));
+	static assert(getNestedArrayFmt!"foo%(%d %|, %)-%|;" == Seq!("foo%(%d %|, %)-", ";"));
 }
 
 /++
@@ -265,41 +265,41 @@ template splitFmt(string fmt) {
 	template helper(int from, int j) {
 		enum i = fmt[from .. $].indexOf('%');
 		static if (i < 0) {
-			enum helper = AliasSeq!(fmt[from .. $]);
+			enum helper = Seq!(fmt[from .. $]);
 		} else {
 			enum i1 = i + from;
 			static assert(i1 + 1 < fmt.length, "Expected formatter after %");
 			enum i2 = i1 + indexOfNonDigit(fmt[i1 + 1 .. $]);
 			// pragma(msg, "fmt: ", fmt[from .. idx2]);
 			static if (fmt[i2 + 1] == 's')
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.STR, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.STR, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'c')
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.CHR, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.CHR, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'b') // TODO: should be binary, but use hex for now
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1].among('d', 'u'))
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'o') // TODO: should be octal, but use hex for now
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.DEC, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'x')
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.HEX, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'X')
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.UHEX, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.UHEX, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1].among('e', 'E', 'f', 'F', 'g', 'G', 'a', 'A')) // TODO: float number formatters
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.FLT, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.FLT, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == 'p')
-				enum helper = AliasSeq!(fmt[from .. i1], spec!(j, FMT.PTR, fmt[i1 + 1 .. i2 + 1]), helper!(
+				enum helper = Seq!(fmt[from .. i1], spec!(j, FMT.PTR, fmt[i1 + 1 .. i2 + 1]), helper!(
 							i2 + 2, j + 1));
 			else static if (fmt[i2 + 1] == '%')
-				enum helper = AliasSeq!(fmt[from .. i1 + 1], helper!(i2 + 2, j));
+				enum helper = Seq!(fmt[from .. i1 + 1], helper!(i2 + 2, j));
 			else static if (fmt[i2 + 1] == '(' || fmt[i2 + 1 .. i2 + 3] == "-(") {
 				// nested array format specifier
 				enum l = fmt[i2 + 1] == '('
@@ -307,7 +307,7 @@ template splitFmt(string fmt) {
 						fmt[i2 + 3 .. $]);
 				alias naSpec = getNestedArrayFmt!(fmt[i2 + 2 .. i2 + 2 + l - 2]);
 				// pragma(msg, fmt[from .. idx1], "|", naSpec[0], "|", naSpec[1], "|");
-				enum helper = AliasSeq!(
+				enum helper = Seq!(
 						fmt[from .. i1],
 						arrSpec!(j, naSpec[0], naSpec[1], fmt[i2 + 1] != '('),
 						helper!(i2 + 2 + l, j + 1));

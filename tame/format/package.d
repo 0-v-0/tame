@@ -25,8 +25,8 @@ module tame.format;
 
 import std.algorithm : max, min;
 import std.datetime.date : TimeOfDay;
-import std.meta,
-std.range,
+import std.meta : Seq = AliasSeq;
+import std.range,
 tame.buffer,
 tame.builtins,
 tame.format.spec,
@@ -636,8 +636,8 @@ version (D_BetterC) {
 	static if (!is(S == NullSink)) {
 		mixin SinkWriter!S;
 
-		alias skipSeq = AliasSeq!(8, 13, 18, 23);
-		alias byteSeq = AliasSeq!(0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34);
+		alias skipSeq = Seq!(8, 13, 18, 23);
+		alias byteSeq = Seq!(0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34);
 
 		char[36] buf = void;
 
