@@ -1,7 +1,7 @@
 module tame.env;
 
 import core.stdc.stdlib;
-import std.string : fromStringz;
+import tame.string : fromStringz;
 
 nothrow @nogc @safe:
 

@@ -119,6 +119,11 @@ nothrow @nogc:
 		return fflush(handle) == 0;
 	}
 
+	void rewind() @trusted
+	in (isOpen, "file is not open") {
+		.rewind(handle);
+	}
+
 	bool sync() @trusted {
 		version (Windows) {
 			import core.sys.windows.winbase : FlushFileBuffers;
@@ -193,6 +198,11 @@ nothrow @nogc:
 
 			return isOpen ? cast(HANDLE)_get_osfhandle(fileno) : null;
 		}
+	}
+
+	@property FILE* getFP() @safe pure
+	in (isOpen, "file is not open") {
+		return handle;
 	}
 
 	@property long size() @trusted {

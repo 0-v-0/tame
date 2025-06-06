@@ -2,7 +2,8 @@ module tame.unsafe.string;
 
 nothrow @nogc:
 
-template TempDup(alias s, string name = s.stringof ~ "d", size_t reserve = 0) if (is(typeof(s) : T[], T)) {
+template TempDup(alias s, string name = s.stringof ~ "d", size_t reserve = 0)
+if (is(typeof(s) : T[], T)) {
 	import core.stdc.stdlib;
 	import core.stdc.string;
 	import std.traits : Unqual;
@@ -36,10 +37,9 @@ unittest {
 }
 
 version (Windows) {
-	import core.sys.windows.core;
-
 	template TempWCStr(alias s, string name = s.stringof ~ "w") {
 		import core.stdc.stdlib;
+		import core.sys.windows.core;
 
 		static if (is(typeof(s) : const(char)[])) {
 			mixin TempCStr!(s, "strz");

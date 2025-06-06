@@ -1,5 +1,6 @@
 module tame.logger.filelogger;
 
+version(D_Exceptions):
 import std.datetime;
 import tame.format;
 import tame.io.file;

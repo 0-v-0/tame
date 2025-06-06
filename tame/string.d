@@ -6,6 +6,30 @@ std.ascii : isWhite;
 
 pure nothrow @nogc @safe:
 
+version (D_BetterC) {
+	import std.traits;
+
+	inout(Char)[] fromStringz(Char)(return scope inout(Char)* cString) @system
+	if (isSomeChar!Char) {
+		import core.stdc.stddef : wchar_t;
+
+		static if (is(immutable Char == immutable char))
+			import core.stdc.string : cstrlen = strlen;
+		else static if (is(immutable Char == immutable wchar_t))
+			import core.stdc.wchar_ : cstrlen = wcslen;
+		else
+			static size_t cstrlen(scope const Char* s) {
+				const(Char)* p = s;
+				while (*p)
+					++p;
+				return p - s;
+			}
+
+		return cString ? cString[0 .. cstrlen(cString)] : null;
+	}
+} else
+	public import std.string : fromStringz;
+
 struct Splitter(bool keepSeparators = false, S:
 	C[], C) if (C.sizeof == 1) {
 	S s;

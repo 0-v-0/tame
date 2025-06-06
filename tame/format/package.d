@@ -31,15 +31,16 @@ tame.buffer,
 tame.builtins,
 tame.format.spec,
 tame.util;
-import std.string : fromStringz;
 import std.traits;
 import std.typecons : Flag, Tuple, isTuple;
 public import tame.format.util;
+import tame.string : fromStringz;
 
 version (D_BetterC) {
 } else {
 	import core.time : Duration;
 	import std.datetime.systime : SysTime;
+	import tame.string : fromStringz;
 	import std.utf : byUTF;
 	import std.uuid : UUID;
 }

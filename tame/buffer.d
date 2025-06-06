@@ -4,7 +4,8 @@ module tame.buffer;
 	Fixed maximum number of items on the stack. Memory is a static stack buffer.
 	This buffer can be filled up and cleared for reuse.
 +/
-struct FixedBuffer(size_t N, T = char) if (T.sizeof == 1) {
+struct FixedBuffer(size_t N, T = char)
+if (T.sizeof == 1) {
 	invariant (pos <= N);
 
 	alias OutputFunc = void delegate(in T[]) @nogc;
@@ -29,13 +30,15 @@ struct FixedBuffer(size_t N, T = char) if (T.sizeof == 1) {
 	}
 
 	/// ditto
-	this(F)(F oFunc) if (is(typeof(oFunc(null)))) {
+	this(F)(F oFunc)
+	if (is(typeof(oFunc(null)))) {
 		outputFunc = cast(OutputFunc)oFunc;
 	}
 
 	T opCast(T : bool)() const => !empty;
 
-	T opCast(T)() const if (!is(T : bool)) => cast(T)buf[0 .. pos];
+	T opCast(T)() const
+	if (!is(T : bool)) => cast(T)buf[0 .. pos];
 
 	/// assignment
 	auto opAssign(in T[] rhs)
@@ -46,7 +49,8 @@ struct FixedBuffer(size_t N, T = char) if (T.sizeof == 1) {
 	}
 
 	/// append
-	void opOpAssign(string op : "~", S)(S rhs) if (S.sizeof == 1) {
+	void opOpAssign(string op : "~", S)(S rhs)
+	if (S.sizeof == 1) {
 		if (pos == N) {
 			outputFunc(buf[]);
 			pos = 0;
@@ -55,7 +59,8 @@ struct FixedBuffer(size_t N, T = char) if (T.sizeof == 1) {
 	}
 
 	/// ditto
-	void opOpAssign(string op : "~", S)(ref S rhs) if (S.sizeof > 1) {
+	void opOpAssign(string op : "~", S)(ref S rhs)
+	if (S.sizeof > 1) {
 		this ~= (cast(T*)&rhs)[0 .. S.sizeof];
 	}
 

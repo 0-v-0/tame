@@ -21,7 +21,8 @@ Note:
 It's illegal to move a class instance even if you are sure there
 are no pointers to it. As such, it is illegal to move a scoped object.
 */
-template scoped(T) if (classInstanceAlignment!T <= ubyte.max) {
+template scoped(T)
+if (classInstanceAlignment!T <= ubyte.max) {
 	// _d_newclass now use default GC alignment (looks like (void*).sizeof * 2 for
 	// small objects). We will just use the maximum of filed alignments.
 	enum alignment = classInstanceAlignment!T;

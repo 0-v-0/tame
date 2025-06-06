@@ -6,6 +6,8 @@ alias
 ResolveFunc(T) = void delegate(Arg!T) nothrow,
 RejectFunc = void delegate(Exception) nothrow;
 
+version(D_Exceptions):
+
 private template Flatten(S) {
 	static if (is(Unqual!S : Promise!U, U))
 		alias Flatten = U;

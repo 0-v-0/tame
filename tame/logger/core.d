@@ -1,5 +1,6 @@
 module tame.logger.core;
 
+version(D_Exceptions):
 import std.algorithm;
 import std.datetime;
 import std.range;

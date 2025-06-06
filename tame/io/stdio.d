@@ -1,7 +1,6 @@
 module tame.io.stdio;
 
 import c = core.stdc.stdio,
-tame.format,
 tame.io.file;
 
 // Undocumented but public because the std* handles are aliasing it.
@@ -85,7 +84,10 @@ alias stdout = makeGlobal!(c.stdout);
 */
 alias stderr = makeGlobal!(c.stderr);
 
-size_t write(T...)(auto ref T args) @trusted if (!is(T[0] : File)) {
+size_t write(T...)(auto ref T args) @trusted
+if (!is(T[0] : File)) {
+	import tame.format;
+
 	size_t len;
 	foreach (i, arg; args)
 		static if (is(T[i] : const(void)[]))
@@ -95,7 +97,8 @@ size_t write(T...)(auto ref T args) @trusted if (!is(T[0] : File)) {
 	return len;
 }
 
-size_t writeln(T...)(auto ref T args) @trusted if (!is(T[0] : File)) {
+size_t writeln(T...)(auto ref T args) @trusted
+if (!is(T[0] : File)) {
 	const len = write(args);
 	return len + stdout.write('\n');
 }

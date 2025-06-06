@@ -62,7 +62,7 @@ On POSIX, getaddrinfo uses its own error codes, and thus has its own
 formatting function.
 +/
 string getGaiError(int err) @trusted nothrow {
-	import std.string : fromStringz;
+	import tame.string : fromStringz;
 
 	version (Windows) {
 		return formatSocketError(err);

@@ -2,6 +2,8 @@ module tame.windows.charset;
 
 version (Windows):
 import core.sys.windows.windows;
+
+version(D_Exceptions):
 import std.windows.syserror : WindowsException;
 
 @safe:
