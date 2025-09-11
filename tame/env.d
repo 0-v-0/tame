@@ -24,7 +24,7 @@ else version (Hurd)
 uint totalCPUs() @trusted {
 	version (Windows) {
 		// NOTE: Only works on Windows 2000 and above.
-		import core.sys.windows.winbase : SYSTEM_INFO, GetSystemInfo;
+		import core.sys.windows.winbase : GetSystemInfo, SYSTEM_INFO;
 		import std.algorithm.comparison : max;
 
 		SYSTEM_INFO si;
@@ -33,7 +33,7 @@ uint totalCPUs() @trusted {
 	} else version (linux) {
 		import core.stdc.stdlib : calloc;
 		import core.stdc.string : memset;
-		import core.sys.linux.sched : CPU_ALLOC_SIZE, CPU_FREE, CPU_COUNT, CPU_COUNT_S, cpu_set_t, sched_getaffinity;
+		import core.sys.linux.sched : CPU_ALLOC_SIZE, CPU_COUNT, CPU_COUNT_S, CPU_FREE, cpu_set_t, sched_getaffinity;
 		import core.sys.posix.unistd : _SC_NPROCESSORS_ONLN, sysconf;
 
 		int count;
@@ -48,17 +48,17 @@ uint totalCPUs() @trusted {
 		for (int n = 64; n <= 16384; n *= 2) {
 			size_t size = CPU_ALLOC_SIZE(count);
 			if (size >= 0x400) {
-				auto cpuset = cast(cpu_set_t*)calloc(1, size);
-				if (cpuset is null)
+				auto cpuSet = cast(cpu_set_t*)calloc(1, size);
+				if (cpuSet is null)
 					break;
-				if (sched_getaffinity(0, size, cpuset) == 0) {
-					count = CPU_COUNT_S(size, cpuset);
+				if (sched_getaffinity(0, size, cpuSet) == 0) {
+					count = CPU_COUNT_S(size, cpuSet);
 				}
-				CPU_FREE(cpuset);
+				CPU_FREE(cpuSet);
 			} else {
-				cpu_set_t cpuset;
-				if (sched_getaffinity(0, cpu_set_t.sizeof, &cpuset) == 0) {
-					count = CPU_COUNT(&cpuset);
+				cpu_set_t cpuSet;
+				if (sched_getaffinity(0, cpu_set_t.sizeof, &cpuSet) == 0) {
+					count = CPU_COUNT(&cpuSet);
 				}
 			}
 

@@ -40,9 +40,9 @@ version (D_BetterC) {
 } else {
 	import core.time : Duration;
 	import std.datetime.systime : SysTime;
-	import tame.string : fromStringz;
 	import std.utf : byUTF;
 	import std.uuid : UUID;
+	import tame.string : fromStringz;
 }
 
 @safe:
