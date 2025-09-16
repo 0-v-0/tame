@@ -11,7 +11,8 @@ Params:
 	T = the type of the elements to store
 	N = the capacity of the queue, must be a power of 2
 +/
-struct RWQueue(T, size_t N = roundPow2(PAGE_SIZE / T.sizeof)) if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
+struct RWQueue(T, size_t N = roundPow2(PAGE_SIZE / T.sizeof))
+if (T.sizeof) // TODO: Hangs for struct T { double x, y; }, is this a bug or a fundamental limitation?
 {
 	static assert(N, "Cannot have a capacity of 0.");
 	static assert(roundPow2(N) == N, "The capacity must be a power of 2");
@@ -93,7 +94,7 @@ unittest {
 	import std.datetime.stopwatch, std.stdio;
 
 	StopWatch sw;
-	sw.start;
+	sw.start();
 
 	RWQueue!double queue;
 	auto t0 = new Thread({ push(queue); }),
@@ -106,7 +107,7 @@ unittest {
 	sw.stop;
 	auto usecs = sw.peek.total!"usecs";
 	writeln("Duration: ", usecs, " usecs");
-	writeln("Framerate: ", 1e6 * amount / usecs, " frames per second");
+	writeln("Framerate: ", 1e6 * amount / usecs, " frames/s");
 }
 
 unittest {

@@ -9,6 +9,7 @@
         "calloc",
         "conv",
         "ctfe",
+        "dfmt",
         "errno",
         "FILETIME",
         "hnsecs",
@@ -20,6 +21,7 @@
         "stdc",
         "stdlib",
         "stringof",
+        "subkey",
         "SYSTEMTIME",
         "systime",
         "TVOS",
@@ -27,6 +29,7 @@
         "ubyte",
         "Unqual",
         "usecs",
+        "wchar",
         "writefln",
         "writeln"
     ]

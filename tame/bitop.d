@@ -5,7 +5,7 @@ import std.traits : Unqual;
 
 pure nothrow @nogc:
 
-/**
+/++
 Count leading zeroes.
 
 Params:
@@ -14,7 +14,7 @@ Params:
 Returns:
 	The number of leading zero bits before the first one bit. If `u` is `0`,
 	the result is undefined.
-*/
++/
 version (LDC) {
 	pragma(inline, true)
 	U clz(U)(U u)

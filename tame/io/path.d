@@ -4,11 +4,11 @@ import std.traits;
 
 @safe pure nothrow:
 
-/** Returns: whether the given character is a directory separator.
+/++ Returns: whether the given character is a directory separator.
 
-	On Windows, this includes both $(D `\`) and $(D `/`).
-	On POSIX, it's just $(D `/`).
-*/
+	On Windows, this includes both `\` and `/`.
+	On POSIX, it's just `/`.
++/
 bool isDirSeparator(dchar c) {
 	if (c == '/')
 		return true;
@@ -29,7 +29,7 @@ unittest {
 	}
 }
 
-/** Returns the parent directory of `path`. On Windows, this
+/++ Returns the parent directory of `path`. On Windows, this
 	includes the drive letter if present. If `path` is a relative path and
 	the parent directory is the current working directory, returns `"."`.
 
@@ -41,10 +41,9 @@ unittest {
 
 	Standards:
 	This function complies with
-	$(LINK2 http://pubs.opengroup.org/onlinepubs/9699919799/utilities/dirname.html,
-	the POSIX requirements for the 'dirname' shell utility)
+	[the POSIX requirements for the 'dirname' shell utility](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/dirname.html)
 	(with suitable adaptations for Windows paths).
-*/
++/
 auto dirName(return in char[] path) {
 	if (path.length == 0)
 		return ".";
@@ -107,7 +106,7 @@ auto dirName(return in char[] path) {
 	}
 }
 
-/**
+/++
 	Params:
 		path = A path name. It can be a string, or any random-access range of
 			characters.
@@ -135,7 +134,7 @@ auto dirName(return in char[] path) {
 	This function complies with
 	[the POSIX requirements for the 'basename' shell utility](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/basename.html)
 	(with suitable adaptations for Windows paths).
-*/
++/
 auto baseName(return in char[] path) {
 	auto p1 = stripDrive(path);
 	if (p1.length == 0) {

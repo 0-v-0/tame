@@ -36,11 +36,11 @@ string formatSocketError(int err) @trusted nothrow {
 
 		char[80] buf;
 		version (GNU_STRERROR) {
-			const(char)* cs = strerror_r(err, buf.ptr, buf.length);
+			const cs = strerror_r(err, buf.ptr, buf.length);
 		} else {
 			if (auto errs = strerror_r(err, buf.ptr, buf.length))
 				return text("Socket error ", err);
-			const(char)* cs = buf.ptr;
+			const cs = buf.ptr;
 		}
 
 		auto len = strlen(cs);

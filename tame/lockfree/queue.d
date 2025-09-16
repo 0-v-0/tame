@@ -130,5 +130,5 @@ unittest {
 	sw.stop;
 	auto usecs = sw.peek.total!"usecs";
 	writeln("Duration: ", usecs, " usecs");
-	writeln("Framerate: ", 1e6 * amount / usecs, " frames per second");
+	writeln("Framerate: ", 1e6 * amount / usecs, " frames/s");
 }

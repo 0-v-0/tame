@@ -30,8 +30,8 @@ version (D_BetterC) {
 } else
 	public import std.string : fromStringz;
 
-struct Splitter(bool keepSeparators = false, S:
-	C[], C) if (C.sizeof == 1) {
+struct Splitter(bool keepSeparators = false, S: C[], C)
+if (C.sizeof == 1) {
 	S s;
 	private size_t frontLen;
 	C sep;
@@ -68,7 +68,7 @@ unittest {
 	auto s = splitter("foo");
 	assert(!s.empty);
 	assert(s.front == "foo");
-	s.popFront;
+	s.popFront();
 	assert(s.empty);
 }
 
@@ -76,31 +76,31 @@ unittest {
 	{
 		auto s = splitter("foo bar baz");
 		assert(s.front == "foo");
-		s.popFront;
+		s.popFront();
 		assert(s.front == "bar");
-		s.popFront;
+		s.popFront();
 		assert(s.front == "baz");
-		s.popFront;
+		s.popFront();
 		assert(s.empty);
 	}
 	auto s = "foo,bar,baz".splitter(',');
 	assert(s.front == "foo");
-	s.popFront;
+	s.popFront();
 	assert(s.front == "bar");
-	s.popFront;
+	s.popFront();
 	assert(s.front == "baz");
-	s.popFront;
+	s.popFront();
 	assert(s.empty);
 }
 
 unittest {
 	auto s = splitter!true("foo bar baz");
 	assert(s.front == "foo ");
-	s.popFront;
+	s.popFront();
 	assert(s.front == "bar ");
-	s.popFront;
+	s.popFront();
 	assert(s.front == "baz");
-	s.popFront;
+	s.popFront();
 	assert(s.empty);
 }
 
@@ -116,11 +116,11 @@ bool canFind(in char[] s, char c) @trusted {
 }
 
 unittest {
-	assert(canFind("foo", 'o'));
-	assert(!canFind("foo", 'z'));
-	assert(!canFind("", 'z'));
-	static assert(canFind("foo", 'o'));
-	static assert(!canFind("foo", 'z'));
+	assert("foo".canFind('o'));
+	assert(!"foo".canFind('z'));
+	assert(!"".canFind('z'));
+	static assert("foo".canFind('o'));
+	static assert(!"foo".canFind('z'));
 }
 
 ptrdiff_t indexOf(in char[] s, char c) @trusted {
@@ -156,16 +156,16 @@ ptrdiff_t indexOf(in char[] s, char c, size_t start) @trusted {
 }
 
 unittest {
-	assert(indexOf("hello", 'h') == 0);
-	assert(indexOf("hello", 'e') == 1);
-	assert(indexOf("hello", 'o') == 4);
-	assert(indexOf("hello", 'z') == -1);
-	assert(indexOf("hello", 'h', 1) == -1);
-	assert(indexOf("hello", 'e', 1) == 1);
-	static assert(indexOf("hello", 'h') == 0);
-	static assert(indexOf("hello", 'e') == 1);
-	static assert(indexOf("hello", 'h', 1) == -1);
-	static assert(indexOf("hello", 'e', 1) == 1);
+	assert("hello".indexOf('h') == 0);
+	assert("hello".indexOf('e') == 1);
+	assert("hello".indexOf('o') == 4);
+	assert("hello".indexOf('z') == -1);
+	assert("hello".indexOf('h', 1) == -1);
+	assert("hello".indexOf('e', 1) == 1);
+	static assert("hello".indexOf('h') == 0);
+	static assert("hello".indexOf('e') == 1);
+	static assert("hello".indexOf('h', 1) == -1);
+	static assert("hello".indexOf('e', 1) == 1);
 }
 
 ptrdiff_t lastIndexOf(in char[] s, char c) {
@@ -189,16 +189,16 @@ ptrdiff_t lastIndexOf(in char[] s, char c, size_t start) {
 }
 
 unittest {
-	assert(lastIndexOf("hello", 'h') == 0);
-	assert(lastIndexOf("hello", 'e') == 1);
-	assert(lastIndexOf("hello", 'o') == 4);
-	assert(lastIndexOf("hello", 'z') == -1);
-	assert(lastIndexOf("hello", 'o', 5) == 4);
-	assert(lastIndexOf("hello", 'o', 2) == -1);
-	static assert(lastIndexOf("hello", 'h') == 0);
-	static assert(lastIndexOf("hello", 'e') == 1);
-	static assert(lastIndexOf("hello", 'o', 5) == 4);
-	static assert(lastIndexOf("hello", 'o', 2) == -1);
+	assert("hello".lastIndexOf('h') == 0);
+	assert("hello".lastIndexOf('e') == 1);
+	assert("hello".lastIndexOf('o') == 4);
+	assert("hello".lastIndexOf('z') == -1);
+	assert("hello".lastIndexOf('o', 5) == 4);
+	assert("hello".lastIndexOf('o', 2) == -1);
+	static assert("hello".lastIndexOf('h') == 0);
+	static assert("hello".lastIndexOf('e') == 1);
+	static assert("hello".lastIndexOf('o', 5) == 4);
+	static assert("hello".lastIndexOf('o', 2) == -1);
 }
 
 auto stripLeft(S)(S input) {
@@ -303,11 +303,11 @@ bool startsWith(in char[] input, in char[] prefix)
 	cmp(input[0 .. prefix.length], prefix) == 0;
 
 unittest {
-	assert(startsWith("hello", 'h'));
-	assert(startsWith("hello", "he"));
-	assert(!startsWith("hello", "hi"));
-	assert(!startsWith("hello", "hello world"));
-	assert(startsWith("hello", ""));
+	assert("hello".startsWith('h'));
+	assert("hello".startsWith("he"));
+	assert(!"hello".startsWith("hi"));
+	assert(!"hello".startsWith("hello world"));
+	assert("hello".startsWith(""));
 }
 
 bool endsWith(in char[] input, char ch)
@@ -318,9 +318,9 @@ bool endsWith(in char[] input, in char[] suffix)
 	cmp(input[input.length - suffix.length .. $], suffix) == 0;
 
 unittest {
-	assert(endsWith("hello", 'o'));
-	assert(endsWith("hello", "lo"));
-	assert(!endsWith("hello", "hi"));
-	assert(!endsWith("hello", "hello world"));
-	assert(endsWith("hello", ""));
+	assert("hello".endsWith('o'));
+	assert("hello".endsWith("lo"));
+	assert(!"hello".endsWith("hi"));
+	assert(!"hello".endsWith("hello world"));
+	assert("hello".endsWith(""));
 }

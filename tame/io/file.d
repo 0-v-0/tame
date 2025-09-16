@@ -78,18 +78,35 @@ nothrow @nogc:
 		}
 	}
 
-	void detach() {
-		if (isOpen && atomicOp!"-="(refs, 1) == 0)
+	/++
+		Detaches the file handle, closing the file if this is the last reference.
+		Returns: true if the file was closed, false otherwise.
+	+/
+	bool detach() {
+		if (isOpen && atomicOp!"-="(refs, 1) == 0) {
 			close();
+			return true;
+		}
+		return false;
 	}
 
-	void close() {
+	/++
+		Closes the file handle if it is open.
+		Returns: true if the file was successfully closed, false otherwise.
+	+/
+	bool close() {
+		bool r = true;
 		if (isOpen) {
-			fclose(handle);
+			r = fclose(handle) == 0;
 			handle = null;
 		}
+		return r;
 	}
 
+	/++
+		Reads up to `buffer.length` bytes from the file into `buffer`.
+		Returns: a slice of `buffer` containing the bytes that were read.
+	+/
 	void[] read(void[] buffer) @trusted
 	in (isOpen, "file is not open") {
 		const n = fread(buffer.ptr, 1, buffer.length, handle);
@@ -97,16 +114,28 @@ nothrow @nogc:
 		return buffer[0 .. n];
 	}
 
+	/++
+		Writes the contents of `buffer` to the file.
+		Returns: the number of bytes that were written.
+	+/
 	size_t write(in void[] buffer) @trusted
 	in (isOpen, "file is not open") {
 		return fwrite(buffer.ptr, 1, buffer.length, handle);
 	}
 
+	/++
+		Writes the contents of `buffer` to the file, followed by a newline character.
+		Returns: the number of bytes that were written.
+	+/
 	size_t writeln(in char[] buffer) @trusted
 	in (isOpen, "file is not open") {
 		return write(buffer) + write('\n');
 	}
 
+	/++
+		Writes a single character to the file.
+		Returns: whether the write was successful.
+	+/
 	size_t write(char c) @trusted
 	in (isOpen, "file is not open") {
 		return fputc(c, handle) != EOF;
@@ -114,23 +143,34 @@ nothrow @nogc:
 
 	alias put = write;
 
+	/++
+		Flushes the file's output buffer.
+		Returns: whether the flush was successful.
+	+/
 	bool flush() @trusted
 	in (isOpen, "file is not open") {
 		return fflush(handle) == 0;
 	}
 
+	/++
+		Rewinds the file to the beginning.
+	+/
 	void rewind() @trusted
 	in (isOpen, "file is not open") {
 		.rewind(handle);
 	}
 
+	/++
+		Synchronizes the file's in-core state with the storage device.
+		Returns: whether the sync was successful.
+	+/
 	bool sync() @trusted {
 		version (Windows) {
 			import core.sys.windows.winbase : FlushFileBuffers;
 
 			return FlushFileBuffers(toHandle) != 0;
 		} else version (Darwin) {
-			import core.sys.darwin.fcntl : fcntl, F_FULLFSYNC;
+			import core.sys.darwin.fcntl : F_FULLFSYNC, fcntl;
 
 			return fcntl(fileno, F_FULLFSYNC, 0) != -1;
 		} else {
@@ -140,6 +180,13 @@ nothrow @nogc:
 		}
 	}
 
+	/++
+		Seeks to a new position in the file.
+		Params:
+			offset = the offset to seek to, in bytes
+			origin = the reference point for the offset (SEEK_SET, SEEK_CUR, or SEEK_END)
+		Returns: whether the seek was successful.
+	+/
 	bool seek(long offset, int origin = SEEK_SET) @trusted
 	in (isOpen, "file is not open") {
 		version (Windows) {
@@ -156,25 +203,38 @@ nothrow @nogc:
 		return fseekF(handle, cast(off_t)offset, origin) == 0;
 	}
 
+	/++
+		Clears the end-of-file and error indicators for the file.
+	+/
 	void clearerr() @safe pure nothrow {
 		isOpen && .clearerr(handle);
 	}
 
+	/++
+		Returns a range that reads the file line by line.
+		Params:
+			terminator = the line terminator character (default: '\n')
+			keepTerminator = whether to include the terminator in the lines (default: false)
+	+/
 	auto byLine(char terminator = '\n', bool keepTerminator = false)
 		=> ByTerminator!1024(this, terminator, keepTerminator);
 
 	@property @safe const {
+		/// Returns: whether the file is open.
 		bool isOpen() pure
 			=> handle !is null;
 
+		/// Returns: whether the file is at end-of-file.
 		bool eof() @trusted pure
 		in (isOpen, "file is not open")
 			=> feof(cast(FILE*)handle) != 0;
 
+		/// Returns: whether the file has encountered an error.
 		bool error() @trusted pure
 		in (isOpen, "file is not open")
 			=> ferror(cast(FILE*)handle) != 0;
 
+		/// Get the current position in the file.
 		long tell() @trusted
 		in (isOpen, "file is not open") {
 			version (Windows) {
@@ -188,11 +248,19 @@ nothrow @nogc:
 			return ftellF(cast(FILE*)handle);
 		}
 
+		/++
+			Get the underlying file descriptor.
+			Requires: the file is open.
+		+/
 		int fileno() @trusted
 		in (isOpen, "file is not open") {
 			return .fileno(cast(FILE*)handle);
 		}
 
+		/++
+			Get the underlying OS file handle.
+			If the file is not open, returns null.
+		+/
 		version (Windows) auto toHandle() @trusted {
 			import core.stdc.stdio : _get_osfhandle;
 
@@ -200,18 +268,23 @@ nothrow @nogc:
 		}
 	}
 
+	/++
+		Get the underlying C FILE* pointer.
+		Requires: the file is open.
+	+/
 	@property FILE* getFP() @safe pure
 	in (isOpen, "file is not open") {
 		return handle;
 	}
 
+	/// Returns the size of the file in bytes, or -1 if the file is not open.
 	@property long size() @trusted {
 		if (!isOpen)
 			return -1;
 
-		long pos = tell;
+		const pos = tell;
 		seek(0, SEEK_END);
-		long size = tell;
+		const size = tell;
 		seek(pos, SEEK_SET);
 		return size;
 	}
@@ -222,7 +295,7 @@ package:
 }
 
 /++
-    Checks whether a file exists at the specified path
+    Returns: whether a file exists at the specified path
 +/
 bool exists(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {
@@ -242,6 +315,8 @@ bool exists(in char[] name) @trusted nothrow @nogc {
 	Get size of file `name` in bytes.
 Params:
 	name = the file name
+Returns:
+	the size of the file in bytes, or 0 if the file does not exist
 +/
 ulong getSize(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {
@@ -260,10 +335,20 @@ ulong getSize(in char[] name) @trusted nothrow @nogc {
 	}
 }
 
+///
+@safe unittest {
+	// assert(".".getSize > 0);
+	assert("this file does not exist".getSize == 0);
+}
+
 /++
 	Get the attributes of a file.
 Params:
 	name = the file name
+Returns:
+	On Windows, the file attributes (see GetFileAttributesW).
+	On Posix, the file mode (see stat).
+	If the file does not exist, returns INVALID_FILE_ATTRIBUTES on Windows and 0 on Posix
 +/
 uint getAttributes(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {

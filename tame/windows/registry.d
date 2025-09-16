@@ -5,13 +5,13 @@ version (Windows):
 
 import core.sys.windows.winbase;
 import core.sys.windows.windef;
+public import core.sys.windows.windef : HKEY;
 import core.sys.windows.winreg;
 import tame.windows.charset;
-public import core.sys.windows.windef : HKEY;
 
 /// Enumeration of the recognised registry value types.
 enum RegValueType : DWORD {
-	NONE						= 0,	/// The null value type. (In practise this is treated as a zero-length binary array by the Win32 registry)
+	NONE						= 0,	/// The null value type. (In practice this is treated as a zero-length binary array by the Win32 registry)
 	SZ							= 1,	/// A zero-terminated string
 	EXPAND_SZ					= 2,	/// A zero-terminated string containing expandable environment variable references
 	BINARY						= 3,	/// A binary blob

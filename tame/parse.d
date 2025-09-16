@@ -66,15 +66,12 @@ SysTime parseSysTime(S)(in S input) @trusted {
 	enum RE1 = `\d{4}-\D{3}-\d{2}`;
 	enum RE2 = `.*[\+|\-]\d{1,2}:\d{1,2}|.*Z`;
 
-	try {
-		if (input.match(RE1))
-			return SysTime.fromSimpleString(input);
-		if (input.match(RE2))
-			return input.canFind('-') ?
-				SysTime.fromISOExtString(input) : SysTime.fromISOString(input);
-		return SysTime(parseDateTime(input), UTC());
-	} catch (ConvException e)
-		throw new DateTimeException("Can not convert '" ~ input ~ "' to SysTime");
+	if (input.match(RE1))
+		return SysTime.fromSimpleString(input);
+	if (input.match(RE2))
+		return input.canFind('-') ?
+			SysTime.fromISOExtString(input) : SysTime.fromISOString(input);
+	return SysTime(parseDateTime(input), UTC());
 }
 
 ///
@@ -103,16 +100,13 @@ DateTime parseDateTime(S)(in S input) @trusted {
 	import std.regex;
 	import std.string;
 
-	try {
-		if (input.match(`\d{8}T\d{6}`)) // ISO String: 'YYYYMMDDTHHMMSS'
-			return DateTime.fromISOString(input);
-		if (input.match(`\d{4}-\D{3}-\d{2}`)) // Simple String 'YYYY-Mon-DD HH:MM:SS'
-			return DateTime.fromSimpleString(input);
-		if (input.match(`\d{4}-\d{2}-\d{2}`)) // ISO ext string 'YYYY-MM-DDTHH:MM:SS'
-			return DateTime.fromISOExtString(input.replace(' ', 'T'));
-		throw new ConvException(null);
-	} catch (ConvException e)
-		throw new DateTimeException("Can not convert '" ~ input ~ "' to DateTime");
+	if (input.match(`\d{8}T\d{6}`)) // ISO String: 'YYYYMMDDTHHMMSS'
+		return DateTime.fromISOString(input);
+	if (input.match(`\d{4}-\D{3}-\d{2}`)) // Simple String 'YYYY-Mon-DD HH:MM:SS'
+		return DateTime.fromSimpleString(input);
+	if (input.match(`\d{4}-\d{2}-\d{2}`)) // ISO ext string 'YYYY-MM-DDTHH:MM:SS'
+		return DateTime.fromISOExtString(input.replace(' ', 'T'));
+	throw new ConvException("Can not convert '" ~ input ~ "' to DateTime");
 }
 
 ///

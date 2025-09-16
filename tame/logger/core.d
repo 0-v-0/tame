@@ -60,9 +60,8 @@ bool disabled(LogLevel level) pure {
 	return (level & levels) != 0;
 }
 
-/** LogEntry is a aggregation combining all information associated
-with a log message.
-*/
+/++ LogEntry is a aggregation combining all information associated
+with a log message. +/
 struct LogEntry {
 	/// local _time of the event
 	SysTime time;

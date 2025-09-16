@@ -31,13 +31,13 @@ tame.io.file;
 	return file;
 }
 
-/** The standard input stream.
+/++ The standard input stream.
 
 	Returns:
-		stdin as a $(LREF File).
+		stdin as a `File`.
 
 	Note:
-		The returned $(LREF File) wraps $(REF stdin,core,stdc,stdio), and
+		The returned `File` wraps $(REF stdin,core,stdc,stdio), and
 		is therefore thread global. Reassigning `stdin` to a different
 		`File` must be done in a single-threaded or locked context in
 		order to avoid race conditions.
@@ -45,17 +45,17 @@ tame.io.file;
 		All reading from `stdin` automatically locks the file globally,
 		and will cause all other threads calling `read` to wait until
 		the lock is released.
-*/
++/
 alias stdin = makeGlobal!(c.stdin);
 
-/**
+/++
 	The standard output stream.
 
 	Returns:
-		stdout as a $(LREF File).
+		stdout as a `File`.
 
 	Note:
-		The returned $(LREF File) wraps $(REF stdout,core,stdc,stdio), and
+		The returned `File` wraps $(REF stdout,core,stdc,stdio), and
 		is therefore thread global. Reassigning `stdout` to a different
 		`File` must be done in a single-threaded or locked context in
 		order to avoid race conditions.
@@ -63,17 +63,17 @@ alias stdin = makeGlobal!(c.stdin);
 		All writing to `stdout` automatically locks the file globally,
 		and will cause all other threads calling `write` to wait until
 		the lock is released.
-*/
++/
 alias stdout = makeGlobal!(c.stdout);
 
-/**
+/++
 	The standard error stream.
 
 	Returns:
-		stderr as a $(LREF File).
+		stderr as a `File`.
 
 	Note:
-		The returned $(LREF File) wraps $(REF stderr,core,stdc,stdio), and
+		The returned `File` wraps $(REF stderr,core,stdc,stdio), and
 		is therefore thread global. Reassigning `stderr` to a different
 		`File` must be done in a single-threaded or locked context in
 		order to avoid race conditions.
@@ -81,7 +81,7 @@ alias stdout = makeGlobal!(c.stdout);
 		All writing to `stderr` automatically locks the file globally,
 		and will cause all other threads calling `write` to wait until
 		the lock is released.
-*/
++/
 alias stderr = makeGlobal!(c.stderr);
 
 size_t write(T...)(auto ref T args) @trusted

@@ -256,12 +256,10 @@ struct Node {
 		assertThrown(Node("4.2").get!int);
 	}
 
-	/** If this is a collection, return its _length.
-	 *
-	 * Otherwise, return 0.
-	 *
-	 * Returns: Number of elements in a sequence or key-value pairs in a map.
-	 */
+	/++ If this is a collection, return its _length.
+		Otherwise, return 0.
+		Returns: Number of elements in a sequence or key-value pairs in a map.
+	+/
 	@property size_t length() const pure @trusted {
 		switch (typ) {
 		case NT.sequence:
@@ -336,28 +334,27 @@ struct Node {
 		assert(map[null].as!string == "Nothing");
 	}
 
-	/** Set element at specified index in a collection.
-	 *
-	 * This method can only be called on collection nodes.
-	 *
-	 * If the node is a sequence, index must be integral.
-	 *
-	 * If the node is a map, sets the _value corresponding to the first
-	 * key matching index (including conversion, so e.g. "42" matches 42).
-	 *
-	 * If the node is a map and no key matches index, a new key-value
-	 * pair is added to the map. In sequences the index must be in
-	 * range. This ensures behavior siilar to D arrays and associative
-	 * arrays.
-	 *
-	 * To set element at a null index, use null for index.
-	 *
-	 * Params:
-	 *          value = Value to assign.
-	 *          index = Index of the value to set.
-	 *
-	 * Throws:  NodeException if the node is not a collection
-	 */
+	/++ Set element at specified index in a collection.
+		This method can only be called on collection nodes.
+
+		If the node is a sequence, index must be integral.
+
+		If the node is a map, sets the _value corresponding to the first
+		key matching index (including conversion, so e.g. "42" matches 42).
+
+		If the node is a map and no key matches index, a new key-value
+		pair is added to the map. In sequences the index must be in
+		range. This ensures behavior siilar to D arrays and associative
+		arrays.
+
+		To set element at a null index, use null for index.
+
+		Params:
+			value = Value to assign.
+			index = Index of the value to set.
+
+		Throws: NodeException if the node is not a collection
+	 +/
 	auto opIndexAssign(K, V)(V value, K key) @trusted {
 		if (empty) {
 			static if (isIntegral!K)
@@ -384,20 +381,18 @@ struct Node {
 		}
 	}
 
-	/** Add an element to a sequence.
-	 *
-	 * This method can only be called on sequence nodes.
-	 *
-	 * If value is a node, it is copied to the sequence directly. Otherwise
-	 * value is converted to a node and then stored in the sequence.
-	 *
-	 * $(P When emitting, all values in the sequence will be emitted. When
-	 * using the !!set tag, the user needs to ensure that all elements in
-	 * the sequence are unique, otherwise $(B nil) YAML code will be
-	 * emitted.)
-	 *
-	 * Params:  value = Value to _add to the sequence.
-	 */
+	/++ Add an element to a sequence.
+		This method can only be called on sequence nodes.
+		If value is a node, it is copied to the sequence directly. Otherwise
+		value is converted to a node and then stored in the sequence.
+
+		When emitting, all values in the sequence will be emitted. When
+		using the !!set tag, the user needs to ensure that all elements in
+		the sequence are unique, otherwise **nil** YAML code will be
+		emitted.
+
+		Params: value = Value to _add to the sequence.
+	+/
 	void add(T)(T value) @trusted {
 		if (empty) {
 			typ = NT.sequence;
@@ -438,21 +433,20 @@ struct Node {
 		}
 	}
 
-	/** Add a key-value pair to a map.
-	 *
-	 * This method can only be called on map nodes.
-	 *
-	 * If key and/or value is a node, it is copied to the map directly.
-	 * Otherwise it is converted to a node and then stored in the map.
-	 *
-	 * $(P It is possible for the same key to be present more than once in a
-	 * map. When emitting, all key-value pairs will be emitted.
-	 * This is useful with the "!!pairs" tag, but will result in
-	 * $(B nil) YAML with "!!map" and "!!omap" tags.)
-	 *
-	 * Params:  key   = Key to _add.
-	 *          value = Value to _add.
-	 */
+	/++ Add a key-value pair to a map.
+	This method can only be called on map nodes.
+
+	If key and/or value is a node, it is copied to the map directly.
+	Otherwise it is converted to a node and then stored in the map.
+
+	It is possible for the same key to be present more than once in a
+	map. When emitting, all key-value pairs will be emitted.
+	This is useful with the "!!pairs" tag, but will result in
+	**nil** YAML with "!!map" and "!!omap" tags.
+
+	Params: key   = Key to _add.
+			value = Value to _add.
+	+/
 	void add(K : const(char)[], V)(K key, V value) @trusted {
 		if (empty) {
 			typ = NT.map;
@@ -483,18 +477,14 @@ struct Node {
 		}
 	}
 
-	/** Determine whether a key is in a map, and access its value.
-	 *
-	 * This method can only be called on map nodes.
-	 *
-	 * Params:   key = Key to search for.
-	 *
-	 * Returns:  A pointer to the value (as a Node) corresponding to key,
-	 *           or null if not found.
-	 *
-	 * Note:     Any modification to the node can invalidate the returned
-	 *           pointer.
-	 */
+	/++ Determine whether a key is in a map, and access its value.
+		This method can only be called on map nodes.
+		Params: key = Key to search for.
+		Returns: A pointer to the value (as a Node) corresponding to key,
+				or null if not found.
+		Note: Any modification to the node can invalidate the returned
+				pointer.
+	+/
 	inout(Node*) opBinaryRight(string op : "in", K)(K key) inout @trusted {
 		if (typ == NT.map)
 			return key in map;

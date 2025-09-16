@@ -13,19 +13,8 @@ specifying a different size in the template parameter.
 
 Params:
 maxLen = The maximum length of the string, including the null terminator.
-
-Example:
----
-void main() {
-	CStr!100 s;
-	s ~= "Hello";
-	s ~= " world!";
-	writeln(s.str);
-}
-// Output: Hello world!
----
 +/
-struct CStr(uint maxLen = 256) {
+struct StrZ(uint maxLen = 256) {
 	size_t length;
 	private char[maxLen] buf = [0];
 
@@ -55,6 +44,8 @@ struct CStr(uint maxLen = 256) {
 		return this;
 	}
 
+	alias put = opOpAssign!"~";
+
 	@property auto str() inout => buf[0 .. length];
 	@property auto strz() {
 		buf[length] = '\0';
@@ -62,8 +53,18 @@ struct CStr(uint maxLen = 256) {
 	}
 }
 
+///
 unittest {
-	alias S = CStr!100;
+	StrZ!100 s;
+	s ~= "Hello";
+	s ~= " world!";
+	assert(s.str == "Hello world!");
+	assert(s.length == 12);
+	assert(s.strz == "Hello world!\0");
+}
+
+unittest {
+	alias S = StrZ!100;
 	S s = S("Hello");
 	s ~= " world!";
 	assert(s.str == "Hello world!");
@@ -75,4 +76,11 @@ unittest {
 	s ~= "Hello";
 	assert(s.str == "Hello");
 	assert(s.strz == "Hello\0");
+}
+
+unittest {
+	import std.range;
+
+	static assert(isOutputRange!(StrZ!10, char));
+	static assert(isOutputRange!(StrZ!10, char[]));
 }

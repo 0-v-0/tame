@@ -117,7 +117,7 @@ string getEnv(string key)() @trusted {
 string getEnv(string key) @trusted {
 	import tame.unsafe.string;
 
-	mixin TempCStr!key;
+	mixin TempStrZ!key;
 	return cast(string)fromStringz(getenv(keyz));
 }
 

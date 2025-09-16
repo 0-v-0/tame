@@ -3,24 +3,24 @@ module tame.unsafe.scoped;
 import std.traits;
 import tame.bitop : alignTo;
 
-/**
-Allocates a `class` object right inside the current scope,
-therefore avoiding the overhead of `new`. This facility is unsafe;
-it is the responsibility of the user to not escape a reference to the
-object outside the scope.
+/++
+	Allocates a `class` object right inside the current scope,
+	therefore avoiding the overhead of `new`. This facility is unsafe;
+	it is the responsibility of the user to not escape a reference to the
+	object outside the scope.
 
-The class destructor will be called when the result of `scoped()` is
-itself destroyed.
+	The class destructor will be called when the result of `scoped()` is
+	itself destroyed.
 
-Scoped class instances can be embedded in a parent `class` or `struct`,
-just like a child struct instance. Scoped member variables must have
-type `typeof(scoped!Class(args))`, and be initialized with a call to
-scoped. See below for an example.
+	Scoped class instances can be embedded in a parent `class` or `struct`,
+	just like a child struct instance. Scoped member variables must have
+	type `typeof(scoped!Class(args))`, and be initialized with a call to
+	scoped. See below for an example.
 
-Note:
-It's illegal to move a class instance even if you are sure there
-are no pointers to it. As such, it is illegal to move a scoped object.
-*/
+	Note:
+	It's illegal to move a class instance even if you are sure there
+	are no pointers to it. As such, it is illegal to move a scoped object.
++/
 template scoped(T)
 if (classInstanceAlignment!T <= ubyte.max) {
 	// _d_newclass now use default GC alignment (looks like (void*).sizeof * 2 for
