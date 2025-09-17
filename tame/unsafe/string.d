@@ -19,7 +19,7 @@ unittest {
 	assert(sd == "hello", sd);
 }
 
-template TempCStr(alias s, string name = s.stringof ~ "z")
+template TempStrZ(alias s, string name = s.stringof ~ "z")
 if (is(typeof(s) : const(char)[])) {
 	import core.stdc.stdlib;
 	import core.stdc.string;
@@ -32,17 +32,17 @@ unittest {
 	import core.stdc.string;
 
 	auto s = "hello";
-	mixin TempCStr!s;
+	mixin TempStrZ!s;
 	assert(strcmp(sz, "hello") == 0);
 }
 
 version (Windows) {
-	template TempWCStr(alias s, string name = s.stringof ~ "w") {
+	template TempWStr(alias s, string name = s.stringof ~ "w") {
 		import core.stdc.stdlib;
 		import core.sys.windows.core;
 
 		static if (is(typeof(s) : const(char)[])) {
-			mixin TempCStr!(s, "strz");
+			mixin TempStrZ!(s, "strz");
 		} else {
 			alias strz = s;
 		}
@@ -56,7 +56,7 @@ version (Windows) {
 
 	unittest {
 		auto s = "hello";
-		mixin TempWCStr!s;
+		mixin TempWStr!s;
 		assert(sw[0 .. 6] == "hello\0"w);
 	}
 }

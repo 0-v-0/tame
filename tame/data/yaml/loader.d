@@ -445,14 +445,14 @@ auto tryParse(in char[] s, out double result) @trusted {
 		else if (value.indexOf(':') >= 0) { //Sexagesimal
 			double val = 0.;
 			foreach (digit; value.splitter(':')) {
-				mixin TempCStr!digit;
+				mixin TempStrZ!digit;
 				if (sscanf(digitz, "%lf", &n) != 1)
 					goto err;
 				val = val * 60 + n;
 			}
 			result *= val;
 		} else { // Plain floating point
-			mixin TempCStr!value;
+			mixin TempStrZ!value;
 			if (sscanf(valuez, "%lf", &n) != 1)
 				goto err;
 			result *= n;

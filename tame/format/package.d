@@ -8,14 +8,14 @@ various functions in this module use "sinks" which are buffers or objects that g
 the formatting data while the format functions are running. The following sink types are
 supported to be passed into these arguments:
 - Arrays (`isArray!S && is(ForeachType!S : char))`)
-- $(LREF NullSink)
+- `NullSink`
 - Object with `put(const(char)[])` and `put(char)` functions
 
 Passing in arrays will make the sink `@nogc pure nothrow @safe` as everything will be written
 into that memory. Passing in arrays that are too short to hold all the data will trigger a
 `RangeError` or terminate the program in betterC.
 
-Passing in a $(LREF NullSink) instance will not allocate any memory and just count the bytes that
+Passing in a `NullSink` instance will not allocate any memory and just count the bytes that
 will be allocated.
 
 Otherwise any type that contains a `put` method that can be called both with `const(char)[]` and

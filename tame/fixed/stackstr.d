@@ -1,4 +1,4 @@
-module tame.fixed.stackcstr;
+module tame.fixed.stackstr;
 
 @safe pure nothrow @nogc:
 
@@ -16,7 +16,7 @@ maxLen = The maximum length of the string, including the null terminator.
 +/
 struct StrZ(uint maxLen = 256) {
 	size_t length;
-	private char[maxLen] buf = [0];
+	private char[maxLen] buf = 0;
 
 	this(char ch) {
 		buf[0] = ch;
@@ -30,21 +30,27 @@ struct StrZ(uint maxLen = 256) {
 		}
 	}
 
-	auto opOpAssign(string op : "~")(char ch) {
+	void put(char ch) {
 		buf[length++] = ch;
-		return this;
 	}
 
-	auto opOpAssign(string op : "~")(in char[] s) @trusted {
+	void put(in char[] s) @trusted {
 		if (s.length) {
 			const l = length + s.length + 1 > buf.length ? buf.length - length - 1 : s.length;
 			memcpy(buf.ptr + length, s.ptr, l);
 			length += l;
 		}
-		return this;
 	}
 
-	alias put = opOpAssign!"~";
+	auto opOpAssign(string op : "~")(char ch) {
+		put(ch);
+		return ch;
+	}
+
+	auto opOpAssign(string op : "~")(in char[] s) {
+		put(s);
+		return s;
+	}
 
 	@property auto str() inout => buf[0 .. length];
 	@property auto strz() {

@@ -1,8 +1,8 @@
 module tame.io.file;
 
-import core.atomic,
-core.stdc.stdio,
+import core.stdc.stdio,
 core.stdc.stdlib,
+tame.atomic,
 tame.unsafe.string;
 
 version (Windows) {
@@ -23,7 +23,7 @@ struct File {
 nothrow @nogc:
 	this(in char[] name, in char[] mode = "rb") {
 		handle = open(name, mode);
-		atomicStore(refs, isOpen);
+		refs = isOpen;
 	}
 
 	this(int fd, in char[] mode = "rb") {
@@ -32,10 +32,10 @@ nothrow @nogc:
 		} else version (Posix) {
 			import core.sys.posix.stdio : fdopen;
 		}
-		mixin TempCStr!mode;
+		mixin TempStrZ!mode;
 
 		handle = fdopen(fd, modez);
-		atomicStore(refs, isOpen);
+		refs = isOpen;
 	}
 
 	version (Windows) {
@@ -73,8 +73,8 @@ nothrow @nogc:
 
 	this(this) @safe pure {
 		if (isOpen) {
-			assert(atomicLoad(refs));
-			atomicOp!"+="(refs, 1);
+			assert(refs, "File reference count overflow");
+			++refs;
 		}
 	}
 
@@ -83,7 +83,7 @@ nothrow @nogc:
 		Returns: true if the file was closed, false otherwise.
 	+/
 	bool detach() {
-		if (isOpen && atomicOp!"-="(refs, 1) == 0) {
+		if (isOpen && --refs == 0) {
 			close();
 			return true;
 		}
@@ -110,7 +110,7 @@ nothrow @nogc:
 	void[] read(void[] buffer) @trusted
 	in (isOpen, "file is not open") {
 		const n = fread(buffer.ptr, 1, buffer.length, handle);
-		assert(n <= buffer.length);
+		assert(n <= buffer.length, "fread read more bytes than requested");
 		return buffer[0 .. n];
 	}
 
@@ -291,7 +291,7 @@ nothrow @nogc:
 
 package:
 	FILE* handle;
-	shared size_t refs;
+	Atomic!size_t refs;
 }
 
 /++
@@ -320,14 +320,14 @@ Returns:
 +/
 ulong getSize(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {
-		mixin TempWCStr!name;
+		mixin TempWStr!name;
 
 		WIN32_FILE_ATTRIBUTE_DATA data = void;
 		if (!GetFileAttributesExW(namew, GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, &data))
 			return 0;
 		return (cast(ulong)data.nFileSizeHigh << 32) | data.nFileSizeLow;
 	} else version (Posix) {
-		mixin TempCStr!name;
+		mixin TempStrZ!name;
 		stat_t statbuf = void;
 		if (lstat(namez, &statbuf) != 0)
 			return 0;
@@ -352,11 +352,11 @@ Returns:
 +/
 uint getAttributes(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {
-		mixin TempWCStr!name;
+		mixin TempWStr!name;
 
 		return GetFileAttributesW(namew);
 	} else version (Posix) {
-		mixin TempCStr!name;
+		mixin TempStrZ!name;
 		stat_t statbuf = void;
 		if (lstat(namez, &statbuf))
 			return 0;
@@ -366,10 +366,10 @@ uint getAttributes(in char[] name) @trusted nothrow @nogc {
 
 bool remove(in char[] name) @trusted nothrow @nogc {
 	version (Windows) {
-		mixin TempWCStr!name;
+		mixin TempWStr!name;
 		return DeleteFileW(namew) != 0;
 	} else version (Posix) {
-		mixin TempCStr!name;
+		mixin TempStrZ!name;
 		return core.stdc.stdio.remove(namez) == 0;
 	}
 }
@@ -427,8 +427,8 @@ private:
 
 auto open(in char[] name, in char[] mode) @trusted {
 	version (Windows) {
-		mixin TempWCStr!name;
-		mixin TempWCStr!mode;
+		mixin TempWStr!name;
+		mixin TempWStr!mode;
 
 		return _wfopen(namew, modew);
 	} else version (Posix) {
@@ -442,23 +442,23 @@ auto open(in char[] name, in char[] mode) @trusted {
 		 */
 		import core.sys.posix.stdio : fopen;
 
-		mixin TempCStr!name;
-		mixin TempCStr!mode;
+		mixin TempStrZ!name;
+		mixin TempStrZ!mode;
 		return fopen(namez, modez);
 	}
 }
 
 auto reopen(in char[] name, in char[] mode, FILE* fp) @trusted {
 	version (Windows) {
-		mixin TempWCStr!name;
-		mixin TempWCStr!mode;
+		mixin TempWStr!name;
+		mixin TempWStr!mode;
 
 		return _wfreopen(namew, modew, fp);
 	} else version (Posix) {
 		import core.sys.posix.stdio : freopen;
 
-		mixin TempCStr!name;
-		mixin TempCStr!mode;
+		mixin TempStrZ!name;
+		mixin TempStrZ!mode;
 		return freopen(namez, modez, fp);
 	}
 }

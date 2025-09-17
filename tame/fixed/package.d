@@ -5,4 +5,4 @@ public import
     tame.fixed.queue,
     tame.fixed.set,
     tame.fixed.stack,
-    tame.fixed.stackcstr;
+    tame.fixed.stackstr;

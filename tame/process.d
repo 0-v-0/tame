@@ -6,7 +6,13 @@ public import std.process : ProcessException;
 import tame.io.file;
 import tame.string;
 
-version (Windows) import core.sys.windows.windows;
+version (Posix) {
+    import core.sys.posix.sys.wait;
+    import core.sys.posix.unistd;
+}
+version (Windows) {
+    import core.sys.windows.windows;
+}
 
 /++
 	Flag options.
@@ -42,7 +48,7 @@ enum Flags {
 	suppressConsole = 16,
 
 	/++
-		On POSIX, open $(LINK2 http://en.wikipedia.org/wiki/File_descriptor,file descriptors)
+		On POSIX, open [file descriptors](http://en.wikipedia.org/wiki/File_descriptor)
 		are by default inherited by the child process.  As this may lead
 		to subtle bugs when pipes or multiple threads are involved,
 		`spawnProcess` ensures that all file descriptors except the
@@ -130,8 +136,8 @@ version (Windows) {
 		sink ~= cmd;
 		sink ~= '\0';
 		auto cmdz = sink[].ptr;
-		mixin TempWCStr!program;
-		mixin TempWCStr!(cmdz, "cmdw");
+		mixin TempWStr!program;
+		mixin TempWStr!(cmdz, "cmdw");
 
 		STARTUPINFOW si;
 		//auto si = startInfo(stdin, stdout, stderr);
