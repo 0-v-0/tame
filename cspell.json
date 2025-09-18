@@ -6,6 +6,7 @@
     "words": [
         "alignof",
         "alloca",
+        "bswap",
         "calloc",
         "conv",
         "ctfe",
@@ -15,6 +16,7 @@
         "hnsecs",
         "memset",
         "msecs",
+        "museair",
         "nogc",
         "nothrow",
         "readln",

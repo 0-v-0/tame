@@ -7,11 +7,12 @@ import tame.io.file;
 import tame.string;
 
 version (Posix) {
-    import core.sys.posix.sys.wait;
-    import core.sys.posix.unistd;
+	import core.stdc.errno;
+	import core.sys.posix.sys.wait;
+	import core.sys.posix.unistd;
 }
 version (Windows) {
-    import core.sys.windows.windows;
+	import core.sys.windows.windows;
 }
 
 /++
@@ -181,7 +182,7 @@ struct Pid {
 	+/
 	bool owned;
 
-	~this() {
+	version (Windows)  ~this() {
 		if (_handle != INVALID_HANDLE_VALUE) {
 			CloseHandle(_handle);
 			_handle = INVALID_HANDLE_VALUE;
@@ -264,14 +265,14 @@ private:
 		}
 		// Mark Pid as terminated, and cache and return exit code.
 		_pid = terminated;
-		_exitCode = exitCode;
 		return exitCode;
 	} else version (Windows) {
 		int performWait(bool block, uint timeout = INFINITE) @trusted {
 			import std.exception : enforce;
 
 			enforce!ProcessException(owned, "Can't wait on a detached process");
-			assert(_handle != INVALID_HANDLE_VALUE);
+			assert(_handle != INVALID_HANDLE_VALUE,
+				"Invalid process handle in Pid.performWait");
 			if (block) {
 				const result = WaitForSingleObject(_handle, timeout);
 				if (result != WAIT_OBJECT_0) {
