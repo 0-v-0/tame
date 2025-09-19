@@ -85,8 +85,8 @@ static if (version_minor < 112) {
 				}
 				return ret;
 			} else version (D_InlineAsm_X86_64) {
-				U lo = void;
-				U hi = void;
+				ulong lo = void;
+				ulong hi = void;
 				asm pure @trusted nothrow @nogc {
 					mov RAX, u1;
 					mul u2;
