@@ -1,38 +1,30 @@
 {
-    "version": "0.2",
-    // language - current active spelling language
-    "language": "en",
-    // words - list of words to be always considered correct
-    "words": [
-        "alignof",
-        "alloca",
-        "bswap",
-        "calloc",
-        "conv",
-        "ctfe",
-        "dfmt",
-        "errno",
-        "FILETIME",
-        "hnsecs",
-        "memset",
-        "msecs",
-        "museair",
-        "nogc",
-        "nothrow",
-        "readln",
-        "stdc",
-        "stdlib",
-        "stringof",
-        "subkey",
-        "SYSTEMTIME",
-        "systime",
-        "TVOS",
-        "typecons",
-        "ubyte",
-        "Unqual",
-        "usecs",
-        "wchar",
-        "writefln",
-        "writeln"
-    ]
+	"version": "0.2",
+	// language - current active spelling language
+	"language": "en",
+	"dictionaries": [
+		"cpp",
+		"cpp-compound-words",
+		"cpp-refined"
+	],
+	// words - list of words to be always considered correct
+	"words": [
+		"alignof",
+		"conv",
+		"ctfe",
+		"dfmt",
+		"hnsecs",
+		"msecs",
+		"museair",
+		"nogc",
+		"readln",
+		"stdc",
+		"stringof",
+		"subkey",
+		"systime",
+		"TVOS",
+		"typecons",
+		"Unqual",
+		"usecs",
+	]
 }

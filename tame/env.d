@@ -107,7 +107,7 @@ uint totalCPUs() @trusted {
 unittest {
 	import tame.io.stdio;
 
-	writeln("Total CPUs: ", totalCPUs());
+	assert(totalCPUs() > 0);
 }
 
 string getEnv(string key)() @trusted {
@@ -123,7 +123,5 @@ string getEnv(string key) @trusted {
 
 ///
 unittest {
-	import tame.io.stdio;
-
-	writeln("PATH len=", getEnv!"PATH".length);
+	assert(getEnv!"TMP".length > 0);
 }

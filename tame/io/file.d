@@ -20,13 +20,13 @@ version (Windows) {
 	static assert(0, "Unsupported platform");
 
 struct File {
-nothrow @nogc:
+nothrow @nogc @safe:
 	this(in char[] name, in char[] mode = "rb") {
 		handle = open(name, mode);
 		refs = isOpen;
 	}
 
-	this(int fd, in char[] mode = "rb") {
+	this(int fd, in char[] mode = "rb") @trusted {
 		version (CRuntime_Microsoft) {
 			alias fdopen = _fdopen;
 		} else version (Posix) {
@@ -39,7 +39,7 @@ nothrow @nogc:
 	}
 
 	version (Windows) {
-		this(HANDLE h, in char[] mode = "rb") {
+		this(HANDLE h, in char[] mode = "rb") @trusted {
 			// Create file descriptors from the handles
 			const fd = _open_osfhandle(cast(INT_PTR)h, toFlags(mode));
 			this(fd, mode);
@@ -67,11 +67,33 @@ nothrow @nogc:
 		handle = .reopen(name, mode, handle);
 	}
 
+	/++
+		Creates an independent duplicate of this file handle.
+	+/
+	File dup(in char[] mode = "rb") @trusted
+	in (isOpen, "file is not open") {
+		version (Windows) {
+			import core.sys.windows.winbase : DuplicateHandle, GetCurrentProcess;
+			import core.sys.windows.winnt : DUPLICATE_SAME_ACCESS;
+
+			HANDLE dupHandle = void;
+			return DuplicateHandle(GetCurrentProcess(), toHandle, GetCurrentProcess(),
+				&dupHandle, 0, true, DUPLICATE_SAME_ACCESS)
+				? File(dupHandle, mode)
+				: File.init;
+		} else version (Posix) {
+			import core.sys.posix.unistd : dup;
+
+			const fd = dup(fileno);
+			return fd != -1 ? File(fd, mode) : File.init;
+		}
+	}
+
 	~this() {
 		detach();
 	}
 
-	this(this) @safe pure {
+	this(this) pure {
 		if (isOpen) {
 			assert(refs, "File reference count overflow");
 			++refs;
@@ -94,7 +116,7 @@ nothrow @nogc:
 		Closes the file handle if it is open.
 		Returns: true if the file was successfully closed, false otherwise.
 	+/
-	bool close() {
+	bool close() @trusted {
 		bool r = true;
 		if (isOpen) {
 			r = fclose(handle) == 0;
@@ -127,7 +149,7 @@ nothrow @nogc:
 		Writes the contents of `buffer` to the file, followed by a newline character.
 		Returns: the number of bytes that were written.
 	+/
-	size_t writeln(in char[] buffer) @trusted
+	size_t writeln(in char[] buffer)
 	in (isOpen, "file is not open") {
 		return write(buffer) + write('\n');
 	}
@@ -218,6 +240,26 @@ nothrow @nogc:
 	+/
 	auto byLine(char terminator = '\n', bool keepTerminator = false)
 		=> ByTerminator!1024(this, terminator, keepTerminator);
+
+	unittest {
+		import tame.env;
+		import tame.io.path;
+
+		auto tempDir = getEnv!"TMP";
+		auto tempFile = tempDir ~ "/tame_test_file.txt";
+		auto f = File(tempFile, "wb");
+		f.write("line 1\nline 2\nline 3");
+		f.close();
+
+		auto r = File(tempFile).byLine;
+		assert(r.front == "line 1");
+		r.popFront();
+		assert(r.front == "line 2");
+		r.popFront();
+		assert(r.front == "line 3");
+		r.popFront();
+		assert(r.empty);
+	}
 
 	@property @safe const {
 		/// Returns: whether the file is open.
@@ -383,8 +425,8 @@ nothrow @nogc:
 	char terminator;
 	bool keepTerminator;
 
-	this(ref File file, char term, bool keepTerm = false) @safe {
-		f = file;
+	this(ref File file, char term, bool keepTerm = false) @trusted {
+		f = file.dup();
 		terminator = term;
 		keepTerminator = keepTerm;
 	}
@@ -394,12 +436,12 @@ nothrow @nogc:
 	void read() @trusted {
 		import core.stdc.string : memchr;
 
-		if (!frontLen && file.isOpen) {
+		if (!data.length && f.isOpen)
 			data = cast(char[])f.read(buf);
-			if (data.length) {
-				const p = memchr(data.ptr, terminator, data.length);
-				frontLen = p ? p - cast(void*)data.ptr + keepTerminator : data.length;
-			}
+
+		if (!frontLen && data.length) {
+			const p = memchr(data.ptr, terminator, data.length);
+			frontLen = p ? cast(size_t)(cast(char*)p - data.ptr) + keepTerminator : data.length;
 		}
 	}
 
@@ -410,8 +452,10 @@ nothrow @nogc:
 		return data.length == 0;
 	}
 
-	@property auto front() @trusted
-		=> data[0 .. frontLen];
+	@property auto front() @trusted {
+		read();
+		return data[0 .. frontLen];
+	}
 
 	void popFront() {
 		if (keepTerminator) {

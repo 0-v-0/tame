@@ -46,7 +46,7 @@ struct Node(K, V) {
 		return null;
 	}
 
-	bool remove(in K key) @nogc nothrow {
+	bool remove(in K key) nothrow {
 		bool result = aa.remove(key);
 		return (next && next.remove(key)) || result;
 	}
