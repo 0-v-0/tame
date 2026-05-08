@@ -62,6 +62,8 @@ version (LDC) {
 /++
 Aligns a pointer to the closest multiple of `alignment`,
 which is equal to or larger than `value`.
+
+Returns: The aligned pointer.
 +/
 T* alignTo(T)(return scope T* ptr, size_t alignment)
 in (alignment.isPowerOf2)
@@ -72,6 +74,7 @@ size_t alignTo(size_t alignment)(size_t n)
 if (alignment.isPowerOf2)
 	=> (n + alignment - 1) & -alignment;
 
+///
 unittest {
 	assert(alignTo(cast(void*)65, 64) == cast(void*)128);
 }

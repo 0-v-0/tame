@@ -13,6 +13,7 @@ if (is(typeof(s) : T[], T)) {
 			"(s.length + reserve) * T.sizeof), s.ptr, s.length * T.sizeof))[0 .. s.length + reserve];");
 }
 
+///
 unittest {
 	auto s = "hello";
 	mixin TempDup!s;
@@ -28,6 +29,7 @@ if (is(typeof(s) : const(char)[])) {
 	int _ = mixin(name)[s.length] = 0;
 }
 
+///
 unittest {
 	import core.stdc.string;
 
@@ -54,6 +56,7 @@ version (Windows) {
 		int _ = MultiByteToWideChar(CP_UTF8, 0, strz, -1, mixin(name), reqLen);
 	}
 
+	///
 	unittest {
 		auto s = "hello";
 		mixin TempWStr!s;

@@ -19,6 +19,26 @@ align(16) struct XXH128_hash_t {
 
 @safe pure nothrow @nogc:
 
+/* XXH PUBLIC API */
+XXH64_hash_t xxh3_64bits(const(void)* input, size_t length) => xxh3_64bits_internal(input, length, 0, &xxh3_kSecret[0],
+	xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
+
+XXH64_hash_t xxh3_64Of(T)(T[] input) @trusted => xxh3_64bits_internal(input.ptr,
+	input.length * T.sizeof, 0, &xxh3_kSecret[0], xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
+
+XXH64_hash_t xxh3_64Of(T)(T[] input, XXH64_hash_t seed) @trusted => xxh3_64bits_internal(input.ptr,
+	input.length * T.sizeof, seed, &xxh3_kSecret[0], xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
+
+XXH64_hash_t xxh3_len2(ushort input, XXH64_hash_t seed = 0) @trusted => xxh3_len_1to3_64b(
+	cast(const(ubyte)*)&input, 2, &xxh3_kSecret[0], seed);
+
+unittest {
+	//Simple example, hashing a string using xxh32Of helper function
+	auto hash = xxh3_64Of("abc");
+	//Let's get a hash string
+	assert(hash == 0x78AF5F94892F3950); // XXH3/64
+}
+
 private:
 enum XXH_PRIME32_1 = 0x9E3779B1U; /** 0b10011110001101110111100110110001 */
 enum XXH_PRIME32_2 = 0x85EBCA77U; /** 0b10000101111010111100101001110111 */
@@ -714,26 +734,4 @@ in (secretLen >= XXH3_SECRET_SIZE_MIN, "secretLen < XXH3_SECRET_SIZE_MIN") {
 		return xxh3_len_129to240_64b(cast(const(ubyte)*)input, len,
 			cast(const(ubyte)*)secret, secretLen, seed64);
 	return f_hashLong(input, len, seed64, cast(const(ubyte)*)secret, secretLen);
-}
-
-public:
-
-/* XXH PUBLIC API */
-XXH64_hash_t xxh3_64bits(const(void)* input, size_t length) => xxh3_64bits_internal(input, length, 0, &xxh3_kSecret[0],
-	xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
-
-XXH64_hash_t xxh3_64Of(T)(T[] input) @trusted => xxh3_64bits_internal(input.ptr,
-	input.length * T.sizeof, 0, &xxh3_kSecret[0], xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
-
-XXH64_hash_t xxh3_64Of(T)(T[] input, XXH64_hash_t seed) @trusted => xxh3_64bits_internal(input.ptr,
-	input.length * T.sizeof, seed, &xxh3_kSecret[0], xxh3_kSecret.sizeof, &xxh3_hashLong_64b_default);
-
-XXH64_hash_t xxh3_len2(ushort input, XXH64_hash_t seed = 0) @trusted => xxh3_len_1to3_64b(
-	cast(const(ubyte)*)&input, 2, &xxh3_kSecret[0], seed);
-
-unittest {
-	//Simple example, hashing a string using xxh32Of helper function
-	auto hash = xxh3_64Of("abc");
-	//Let's get a hash string
-	assert(hash == 0x78AF5F94892F3950); // XXH3/64
 }

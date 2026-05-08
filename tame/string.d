@@ -115,6 +115,7 @@ bool canFind(in char[] s, char c) @trusted {
 	return memchr(s.ptr, c, s.length) !is null;
 }
 
+///
 unittest {
 	assert("foo".canFind('o'));
 	assert(!"foo".canFind('z'));
@@ -168,14 +169,6 @@ unittest {
 	static assert("hello".indexOf('e', 1) == 1);
 }
 
-ptrdiff_t lastIndexOf(in char[] s, char c) {
-	foreach_reverse (i, ch; s) {
-		if (ch == c)
-			return i;
-	}
-	return -1;
-}
-
 /++
 Params:
 	s = string to search
@@ -188,6 +181,7 @@ ptrdiff_t lastIndexOf(in char[] s, char c, size_t start) {
 	return start <= s.length ? lastIndexOf(s[0 .. start], c) : -1;
 }
 
+///
 unittest {
 	assert("hello".lastIndexOf('h') == 0);
 	assert("hello".lastIndexOf('e') == 1);
@@ -201,6 +195,15 @@ unittest {
 	static assert("hello".lastIndexOf('o', 2) == -1);
 }
 
+/// ditto
+ptrdiff_t lastIndexOf(in char[] s, char c) {
+	foreach_reverse (i, ch; s) {
+		if (ch == c)
+			return i;
+	}
+	return -1;
+}
+
 auto stripLeft(S)(S input) {
 	size_t i;
 	for (; i < input.length; ++i) {
@@ -210,6 +213,7 @@ auto stripLeft(S)(S input) {
 	return input[i .. $];
 }
 
+///
 unittest {
 	assert(stripLeft(" foo") == "foo");
 	static assert(stripLeft(" foo") == "foo");
@@ -224,6 +228,7 @@ auto stripLeft(S)(S input, char c) {
 	return input[i .. $];
 }
 
+///
 unittest {
 	assert(stripLeft(" foo") == "foo");
 	assert(stripLeft("  foo", ' ') == "foo");
@@ -240,6 +245,7 @@ auto stripRight(S)(S input) {
 	return input[0 .. i];
 }
 
+///
 unittest {
 	assert(stripRight(" foo") == " foo");
 	assert(stripRight("foo ") == "foo");
@@ -254,6 +260,7 @@ auto stripRight(S)(S input, char c) {
 	return input[0 .. i];
 }
 
+///
 unittest {
 	assert(stripRight(" foo") == " foo");
 	assert(stripRight("foo ") == "foo");
@@ -289,6 +296,7 @@ auto strip(S)(S input, char c) {
 	return input[j .. i];
 }
 
+///
 unittest {
 	assert(strip(" foo") == "foo");
 	assert(strip(" foo", ' ') == "foo");
@@ -302,6 +310,7 @@ bool startsWith(in char[] input, in char[] prefix)
 	=> prefix.length <= input.length &&
 	cmp(input[0 .. prefix.length], prefix) == 0;
 
+///
 unittest {
 	assert("hello".startsWith('h'));
 	assert("hello".startsWith("he"));
@@ -317,6 +326,7 @@ bool endsWith(in char[] input, in char[] suffix)
 	=> suffix.length <= input.length &&
 	cmp(input[input.length - suffix.length .. $], suffix) == 0;
 
+///
 unittest {
 	assert("hello".endsWith('o'));
 	assert("hello".endsWith("lo"));

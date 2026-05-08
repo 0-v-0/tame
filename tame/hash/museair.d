@@ -10,18 +10,40 @@ enum MUSEAIR_ALGORITHM_VERSION = "0.4-rc4";
 
 pure nothrow @nogc:
 
-private:
+alias museAir64 = museAir!(false, false, false);
+alias museAir64bf = museAir!(false, true, false);
+alias museAir128 = museAir!(false, false, true);
+alias museAir128bf = museAir!(false, true, true);
 
-ulong UINT64_C(ulong n) => n;
+///
+unittest {
+	assert(museAir64("") == x"e8eb79d81ee50ba8");
+	assert(museAir64bf("") == x"3472756087f8eebf");
+	assert(museAir128("") == x"bb32484bd55e3bc21508f43f36942870");
+	assert(museAir128bf("") == x"bb32484bd55e3bc21508f43f36942870");
+	assert(museAir64("abc") == x"5fc7290c48d62574");
+	assert(museAir64bf("abc") == x"99ffb5d365eb2585");
+	assert(museAir128("abc") == x"d491a1d5c0abe795a5566e75543a0d7a");
+	assert(museAir128bf("abc") == x"d491a1d5c0abe795a5566e75543a0d7a");
+}
+
+unittest {
+	enum data = "The quick brown fox jumps over the lazy dog";
+	assert(museAir64(data) == x"8f76f44fb62c91f8");
+	assert(museAir64bf(data) == x"8f76f44fb62c91f8");
+	assert(museAir128(data) == x"8fef530f7339edc93c6a47abd34b9fce");
+	assert(museAir128bf(data) == x"8fef530f7339edc93c6a47abd34b9fce");
+}
+
+private:
 
 auto u64x(size_t n) => n * 8;
 
 enum ulong[7] MUSEAIR_CONSTANT = [
-	UINT64_C(0x5ae31e589c56e17a), UINT64_C(0x96d7bb04e64f6da9),
-	UINT64_C(0x7ab1006b26f9eb64),
-	UINT64_C(0x21233394220b8457), UINT64_C(0x047cb9557c9f3b43),
-	UINT64_C(0xd24f2590c0bcee28),
-	UINT64_C(0x33ea8f71bb6016d8)
+	0x5ae31e589c56e17a, 0x96d7bb04e64f6da9,
+	0x7ab1006b26f9eb64, 0x21233394220b8457,
+	0x047cb9557c9f3b43, 0xd24f2590c0bcee28,
+	0x33ea8f71bb6016d8
 ];
 
 pragma(inline, true)
@@ -346,28 +368,3 @@ pragma(inline, true) ubyte[b128 ? 16 : 8] museAir(bool bswap, bool bfast, bool b
 	}
 	return out_;
 }
-
-///
-unittest {
-	assert(museAir64("") == x"e8eb79d81ee50ba8");
-	assert(museAir64bf("") == x"3472756087f8eebf");
-	assert(museAir128("") == x"bb32484bd55e3bc21508f43f36942870");
-	assert(museAir128bf("") == x"bb32484bd55e3bc21508f43f36942870");
-	assert(museAir64("abc") == x"5fc7290c48d62574");
-	assert(museAir64bf("abc") == x"99ffb5d365eb2585");
-	assert(museAir128("abc") == x"d491a1d5c0abe795a5566e75543a0d7a");
-	assert(museAir128bf("abc") == x"d491a1d5c0abe795a5566e75543a0d7a");
-}
-
-unittest {
-	enum data = "The quick brown fox jumps over the lazy dog";
-	assert(museAir64(data) == x"8f76f44fb62c91f8");
-	assert(museAir64bf(data) == x"8f76f44fb62c91f8");
-	assert(museAir128(data) == x"8fef530f7339edc93c6a47abd34b9fce");
-	assert(museAir128bf(data) == x"8fef530f7339edc93c6a47abd34b9fce");
-}
-
-alias museAir64 = museAir!(false, false, false);
-alias museAir64bf = museAir!(false, true, false);
-alias museAir128 = museAir!(false, false, true);
-alias museAir128bf = museAir!(false, true, true);

@@ -65,6 +65,7 @@ in (utf8.length <= int.max, "input string too long") {
 	return ansiCount;
 }
 
+///
 unittest {
 	wchar[256] wide = void;
 	char[256] ansi = void;
@@ -129,6 +130,7 @@ in (wStr.length <= int.max, "input string too long") {
 	return utf8Count;
 }
 
+///
 unittest {
 	char[256] utf8 = void;
 	assert("abc".toUTF8(utf8) == 3);

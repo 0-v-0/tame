@@ -55,6 +55,7 @@ private:
 
 auto asSlug(R)(R s) => SlugRange!R(s);
 
+///
 unittest {
 	import std.algorithm : equal;
 

@@ -26,5 +26,6 @@
 		"typecons",
 		"Unqual",
 		"usecs",
+		"writeln"
 	]
 }

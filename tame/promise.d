@@ -181,6 +181,7 @@ static @safe @nogc pure nothrow:
 	}
 }
 
+///
 unittest {
 	import tame.io.stdio;
 
@@ -244,6 +245,7 @@ T await(T)(Promise!T promise) {
 	}
 }
 
+///
 unittest {
 	import core.thread,
 	core.time,

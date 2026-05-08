@@ -34,6 +34,7 @@ private:
 	uint len;
 }
 
+///
 unittest {
 	Stack!int stack;
 	assert(stack.empty);

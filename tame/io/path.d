@@ -188,6 +188,7 @@ auto rtrimDirSeparators(in char[] path) {
 	return path[0 .. i + 1];
 }
 
+///
 unittest {
 	assert(rtrimDirSeparators("//abc//") == "//abc");
 }

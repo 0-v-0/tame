@@ -117,6 +117,7 @@ pure:
 	bool has(in T val) => (val in this) !is null;
 }
 
+///
 unittest {
 	Set!(int, 4) s;
 	assert(s.empty);

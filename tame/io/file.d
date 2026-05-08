@@ -242,11 +242,12 @@ nothrow @nogc @safe:
 		=> ByTerminator!1024(this, terminator, keepTerminator);
 
 	unittest {
+		import tame.buffer;
 		import tame.env;
 		import tame.io.path;
 
-		auto tempDir = getEnv!"TMP";
-		auto tempFile = tempDir ~ "/tame_test_file.txt";
+		auto tempFile = StringSink(getEnv!"TMP");
+		tempFile ~= "/tame_test_file.txt";
 		auto f = File(tempFile, "wb");
 		f.write("line 1\nline 2\nline 3");
 		f.close();

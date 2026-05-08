@@ -186,6 +186,7 @@ pure @nogc nothrow @safe:
 
 alias StringSink = Sink!char;
 
+///
 unittest {
 	auto s = Sink!char();
 	s.put("abc");

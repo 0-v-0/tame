@@ -45,6 +45,7 @@ template CompactPtr(TF, string field, T = void*) if (TF.sizeof <= 2) {
 	}
 }
 
+///
 unittest {
 	struct S {
 		mixin CompactPtr!(ushort, "flag");
