@@ -123,5 +123,5 @@ string getEnv(string key) @trusted {
 
 ///
 unittest {
-	assert(getEnv!"TMP".length > 0);
+	assert(getEnv!"PATH".length > 0);
 }

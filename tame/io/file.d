@@ -79,8 +79,7 @@ nothrow @nogc @safe:
 			HANDLE dupHandle = void;
 			return DuplicateHandle(GetCurrentProcess(), toHandle, GetCurrentProcess(),
 				&dupHandle, 0, true, DUPLICATE_SAME_ACCESS)
-				? File(dupHandle, mode)
-				: File.init;
+				? File(dupHandle, mode) : File.init;
 		} else version (Posix) {
 			import core.sys.posix.unistd : dup;
 
@@ -179,7 +178,8 @@ nothrow @nogc @safe:
 	+/
 	void rewind() @trusted
 	in (isOpen, "file is not open") {
-		.rewind(handle);
+		
+			.rewind(handle);
 	}
 
 	/++
@@ -241,18 +241,17 @@ nothrow @nogc @safe:
 	auto byLine(char terminator = '\n', bool keepTerminator = false)
 		=> ByTerminator!1024(this, terminator, keepTerminator);
 
+	///
 	unittest {
 		import tame.buffer;
 		import tame.env;
 		import tame.io.path;
 
-		auto tempFile = StringSink(getEnv!"TMP");
-		tempFile ~= "/tame_test_file.txt";
-		auto f = File(tempFile, "wb");
+		auto tempFile = .fileno(tmpfile());
+		auto f = File(tempFile, "wb+");
 		f.write("line 1\nline 2\nline 3");
-		f.close();
-
-		auto r = File(tempFile).byLine;
+		f.rewind();
+		auto r = f.byLine();
 		assert(r.front == "line 1");
 		r.popFront();
 		assert(r.front == "line 2");

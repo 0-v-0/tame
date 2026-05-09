@@ -11,7 +11,8 @@ numeric characters, as well as dashes (-). Every sequence of
 non-alphanumeric characters will be replaced by a single dash. No dashes
 will be at either the front or the back of the result string.
 +/
-struct SlugRange(R) if (isInputRange!R && is(typeof(R.init.front) == dchar)) {
+struct SlugRange(R)
+if (isInputRange!R && is(typeof(R.init.front) == dchar)) {
 	this(R input) {
 		r = input;
 		skipNonAlphaNum();
